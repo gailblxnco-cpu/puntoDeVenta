@@ -50,7 +50,6 @@
                 <VBox spacing="15">
                     <Button fx:id="btnGuardar" text="GUARDAR NUEVA BEBIDA" maxWidth="Infinity" onAction="#handleGuardar" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
                     <Button fx:id="btnModificar" text="MODIFICAR SELECCIONADO" maxWidth="Infinity" onAction="#handleModificar" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
-                    <Button text="LIMPIAR FORMULARIO" maxWidth="Infinity" onAction="#handleLimpiar" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
                 </VBox>
 
                 <Label fx:id="lblEstado" textFill="#2ecc71" wrapText="true" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>

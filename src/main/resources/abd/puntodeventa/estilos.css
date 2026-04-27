@@ -62,3 +62,24 @@
     -fx-border-width: 2px;
     -fx-background-color: white;
 }
+
+.btn-volver {
+    -fx-background-color: transparent;
+    -fx-text-fill: #95a5a6; /* Color gris suave */
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+/* Efecto cuando pasas el mouse por encima */
+.btn-volver:hover {
+    -fx-text-fill: #e74c3c; /* Cambia a rojo solo al pasar el mouse */
+    -fx-underline: true;     /* Se subraya para indicar que es un link */
+    -fx-background-color: rgba(231, 76, 60, 0.1);
+}
+
+.cart-panel {
+    -fx-min-width: 380px;
+    -fx-pref-width: 380px;
+    -fx-max-width: 380px;
+}

@@ -3,19 +3,34 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox spacing="25" alignment="CENTER" style="-fx-background-color: #2c3e50; -fx-padding: 30;" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.PerfilClienteController">
-    <Label text="Perfil del Cliente" textFill="WHITE" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+<StackPane stylesheets="@estilos.css" style="-fx-background-color: #f5f6fa;" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.PerfilClienteController">
 
-    <VBox alignment="CENTER" style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 20;">
-        <Label fx:id="lblNombreCliente" text="Nombre del Cliente" style="-fx-font-size: 18px;"/>
-        <Label fx:id="lblTelefonoCliente" text="555-0000" textFill="#7f8c8d"/>
+    <VBox maxWidth="450" maxHeight="550" spacing="25" alignment="CENTER"
+          style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);">
 
-        <Separator prefHeight="20"/>
+        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
-        <Label text="PUNTOS ACUMULADOS" style="-fx-font-size: 12px;"/>
-        <Label fx:id="lblPuntos" text="0" textFill="#f39c12" style="-fx-font-size: 48px; -fx-font-weight: bold;"/>
+        <Label text="Resumen de Recompensas" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+        <VBox alignment="CENTER" spacing="5">
+            <Label fx:id="lblNombreCliente" text="Nombre del Cliente" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #34495e;"/>
+            <Label fx:id="lblTelefonoCliente" text="833-000-0000" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;"/>
+        </VBox>
+
+        <VBox alignment="CENTER" style="-fx-background-color: #fdfaf0; -fx-padding: 20; -fx-background-radius: 10; -fx-border-color: #f39c12; -fx-border-radius: 10; -fx-border-width: 1;">
+            <Label text="PUNTOS DISPONIBLES" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #e67e22; -fx-letter-spacing: 1px;"/>
+            <Label fx:id="lblPuntos" text="0" style="-fx-font-size: 48px; -fx-font-weight: bold; -fx-text-fill: #f39c12;"/>
+            <Label text="Equivalente a 1 punto = $0.10" style="-fx-font-size: 10px; -fx-text-fill: #95a5a6;"/>
+        </VBox>
+
+        <VBox spacing="15">
+            <Button text="USAR PUNTOS EN ESTA VENTA" onAction="#aplicarPuntos" maxWidth="Infinity"
+                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 8; -fx-cursor: hand;"/>
+
+            <Separator/>
+
+            <Button text="Volver a la Caja" onAction="#regresarACaja" maxWidth="Infinity"
+                    styleClass="btn-volver" />
+        </VBox>
     </VBox>
-
-    <Button text="USAR PUNTOS EN ESTA VENTA" onAction="#aplicarPuntos" maxWidth="Infinity" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold;"/>
-    <Button text="VOLVER A LA CAJA" onAction="#regresarACaja" maxWidth="Infinity" style="-fx-background-color: #bdc3c7;"/>
-</VBox>
+</StackPane>

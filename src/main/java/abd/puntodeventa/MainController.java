@@ -140,18 +140,20 @@ public class MainController {
 
     private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
-            // Se usa la diagonal inicial para asegurar la ruta en el .jar o recursos
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
+
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-            // Mantener el tamaño de la ventana de Aby
-            Scene scene = new Scene(root, stage.getWidth(), stage.getHeight());
+            double anchoContenido = stage.getScene().getWidth();
+            double altoContenido = stage.getScene().getHeight();
+
+            Scene scene = new Scene(root, anchoContenido, altoContenido);
+
             stage.setScene(scene);
             stage.setTitle(titulo);
             stage.show();
         } catch (IOException e) {
-            System.err.println("Error crítico al cargar: " + fxml);
             e.printStackTrace();
         }
     }

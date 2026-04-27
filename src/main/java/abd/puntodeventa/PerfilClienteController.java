@@ -71,13 +71,13 @@ public class PerfilClienteController {
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-            // Mantenemos el tamaño de la ventana
-            double ancho = stage.getWidth();
-            double alto = stage.getHeight();
+            double anchoContenido = stage.getScene().getWidth();
+            double altoContenido = stage.getScene().getHeight();
 
-            Scene scene = new Scene(root, ancho, alto);
+            Scene scene = new Scene(root, anchoContenido, altoContenido);
+
             stage.setScene(scene);
-            stage.setTitle("Gen POS - Caja Principal");
+            stage.setTitle("GEN POS - caja");
             stage.show();
 
         } catch (IOException e) {

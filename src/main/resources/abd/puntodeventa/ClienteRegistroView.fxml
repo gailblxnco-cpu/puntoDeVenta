@@ -3,27 +3,41 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox spacing="20" alignment="CENTER" style="-fx-background-color: #f4f7f6; -fx-padding: 40;" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.ClienteController">
+<StackPane stylesheets="@estilos.css" style="-fx-background-color: #f5f6fa;" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.ClienteController">
 
-    <Label text="Registro de Nuevo Cliente" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+    <VBox maxWidth="450" maxHeight="550" spacing="25" alignment="CENTER"
+          style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);">
 
-    <VBox spacing="15">
-        <VBox spacing="5">
-            <Label text="Nombre Completo:" style="-fx-font-weight: bold;"/>
-            <TextField fx:id="txtNuevoNombre" promptText="Nombre del cliente" style="-fx-padding: 10px;"/>
+        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
+
+        <Label text="Registro de Nuevo Cliente" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+        <VBox spacing="15">
+            <VBox spacing="5">
+                <Label text="Nombre Completo:" style="-fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
+                <TextField fx:id="txtNuevoNombre" promptText="Nombre del cliente"
+                           style="-fx-padding: 12px; -fx-background-radius: 8; -fx-border-color: #dcdde1; -fx-border-radius: 8;"/>
+            </VBox>
+
+            <VBox spacing="5">
+                <Label text="Teléfono:" style="-fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
+                <TextField fx:id="txtNuevoTelefono" promptText="10 dígitos (ej. 833...)"
+                           style="-fx-padding: 12px; -fx-background-radius: 8; -fx-border-color: #dcdde1; -fx-border-radius: 8;"/>
+            </VBox>
+
+            <Button text="CONFIRMAR REGISTRO" onAction="#registrarCliente" maxWidth="Infinity"
+                    styleClass="btn-primary-pos"/>
         </VBox>
 
-        <VBox spacing="5">
-            <Label text="Teléfono:" style="-fx-font-weight: bold;"/>
-            <TextField fx:id="txtNuevoTelefono" promptText="10 dígitos" style="-fx-padding: 10px;"/>
+        <Separator/>
+
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="¿Ya está registrado?" style="-fx-text-fill: #95a5a6; -fx-font-size: 13px;"/>
+            <Button text="IR A IDENTIFICAR" onAction="#irAIdentificacion" maxWidth="Infinity"
+                    styleClass="btn-secondary-pos" />
         </VBox>
 
-        <Button text="CONFIRMAR REGISTRO" onAction="#registrarCliente" maxWidth="Infinity"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12px; -fx-cursor: hand;"/>
+        <Button text="Volver a la Caja" onAction="#cerrarVentana"
+                styleClass="btn-volver"/>
     </VBox>
-
-    <Separator/>
-
-    <Button text="Ya tiene cuenta (Identificar)" onAction="#irAIdentificacion" maxWidth="Infinity"
-            style="-fx-background-color: transparent; -fx-text-fill: #2980b9; -fx-cursor: hand;"/>
-</VBox>
+</StackPane>

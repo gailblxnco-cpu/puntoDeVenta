@@ -97,29 +97,22 @@ public class ClienteController {
      * Cambia la vista manteniendo el tamaño actual de la ventana
      * para que la transición sea fluida y profesional.
      */
-    private void cambiarVista(ActionEvent event, String archivoFXML, String titulo) {
+    private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
-            // Usamos la ruta absoluta desde la raíz de resources para evitar errores
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + archivoFXML));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-            // Obtenemos dimensiones actuales para que la ventana no "salte"
-            double ancho = stage.getWidth();
-            double alto = stage.getHeight();
+            double anchoContenido = stage.getScene().getWidth();
+            double altoContenido = stage.getScene().getHeight();
 
-            Scene scene = new Scene(root, ancho, alto);
-
-            // Si tienes estilos globales, puedes volver a cargarlos aquí si es necesario
-            // scene.getStylesheets().add(getClass().getResource("estilos.css").toExternalForm());
+            Scene scene = new Scene(root, anchoContenido, altoContenido);
 
             stage.setScene(scene);
             stage.setTitle(titulo);
             stage.show();
-
         } catch (IOException e) {
-            System.err.println("Error crítico al cargar la vista: " + archivoFXML);
             e.printStackTrace();
         }
     }
