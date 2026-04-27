@@ -105,11 +105,10 @@ public class InventarioController {
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-            // Mantener tamaño de ventana
-            double anchoActual = stage.getWidth();
-            double altoActual = stage.getHeight();
+            double anchoContenido = stage.getScene().getWidth();
+            double altoContenido = stage.getScene().getHeight();
 
-            Scene scene = new Scene(root, anchoActual, altoActual);
+            Scene scene = new Scene(root, anchoContenido, altoContenido);
             stage.setScene(scene);
             stage.setTitle("Gen POS - Caja Principal");
             stage.show();
