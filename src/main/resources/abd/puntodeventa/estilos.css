@@ -27,3 +27,38 @@
 /* Scroll */
 .scroll-dark { -fx-background: transparent; -fx-background-color: transparent; }
 .scroll-dark .viewport { -fx-background-color: transparent; }
+
+/* Botones de Acción Principal (Azul Profundo) */
+.btn-primary-pos {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 12 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+.btn-primary-pos:hover {
+    -fx-background-color: #2980b9;
+}
+
+/* Botones de Acción Secundaria (Gris/Azul suave) */
+.btn-secondary-pos {
+    -fx-background-color: #ecf0f1;
+    -fx-text-fill: #2c3e50;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 10 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+.btn-secondary-pos:hover {
+    -fx-background-color: #bdc3c7;
+}
+
+/* Campos de texto enfocados */
+.text-field:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+    -fx-background-color: white;
+}

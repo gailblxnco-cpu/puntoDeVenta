@@ -12,27 +12,34 @@ import java.io.IOException;
 
 public class ClienteController {
 
+    // Campos para la ventana de Identificación
     @FXML private TextField txtTelefonoBusqueda;
+
+    // Campos para la ventana de Registro
     @FXML private TextField txtNuevoNombre;
     @FXML private TextField txtNuevoTelefono;
 
-    // --- LÓGICA DE BÚSQUEDA ---
+    // --- LÓGICA DE IDENTIFICACIÓN (Búsqueda) ---
     @FXML
     public void buscarCliente(ActionEvent event) {
         String telefono = txtTelefonoBusqueda.getText();
+
         if (telefono == null || telefono.trim().isEmpty()) {
-            mostrarAlerta("Campo vacío", "Por favor ingresa un teléfono.");
+            mostrarAlerta("Campo requerido", "Por favor, ingrese un número de teléfono.");
             return;
         }
 
+        // Buscar en la lista global de clientes
         for (Cliente c : InventarioGlobal.getClientes()) {
             if (c.getTelefono().equals(telefono)) {
+                // Cliente encontrado: lo activamos para la venta actual
                 InventarioGlobal.setClienteActivo(c);
-                cambiarVista(event, "PerfilClienteView.fxml", "Perfil de Cliente");
+                cambiarVista(event, "PerfilClienteView.fxml", "Perfil del Cliente");
                 return;
             }
         }
-        mostrarAlerta("No encontrado", "El cliente no existe. ¿Deseas registrarlo?");
+
+        mostrarAlerta("No encontrado", "No existe un cliente con ese número. Proceda al registro.");
     }
 
     // --- LÓGICA DE REGISTRO ---
@@ -42,22 +49,26 @@ public class ClienteController {
         String telefono = txtNuevoTelefono.getText();
 
         if (nombre.isEmpty() || telefono.isEmpty()) {
-            mostrarAlerta("Error", "Debes llenar todos los campos.");
+            mostrarAlerta("Campos incompletos", "Debe llenar el nombre y el teléfono para registrar.");
             return;
         }
 
-        Cliente nuevo = new Cliente(nombre, telefono, 0);
-        InventarioGlobal.getClientes().add(nuevo);
-        InventarioGlobal.setClienteActivo(nuevo);
+        // Crear y añadir el nuevo cliente
+        Cliente nuevoCliente = new Cliente(nombre, telefono, 0);
+        InventarioGlobal.getClientes().add(nuevoCliente);
 
-        mostrarAlerta("Éxito", "Cliente registrado y seleccionado.");
-        cambiarVista(event, "PerfilClienteView.fxml", "Perfil de Cliente");
+        // Seleccionarlo automáticamente para la venta
+        InventarioGlobal.setClienteActivo(nuevoCliente);
+
+        mostrarAlerta("Registro Exitoso", "El cliente ha sido registrado y seleccionado.");
+        cambiarVista(event, "PerfilClienteView.fxml", "Perfil del Cliente");
     }
 
-    // --- NAVEGACIÓN ENTRE VENTANAS ---
+    // --- NAVEGACIÓN ENTRE VISTAS ---
+
     @FXML
     public void irARegistro(ActionEvent event) {
-        cambiarVista(event, "ClienteRegistroView.fxml", "Registrar Cliente");
+        cambiarVista(event, "ClienteRegistroView.fxml", "Registrar Nuevo Cliente");
     }
 
     @FXML
@@ -67,29 +78,49 @@ public class ClienteController {
 
     @FXML
     public void cerrarVentana(ActionEvent event) {
-        cambiarVista(event, "MainView.fxml", "Gen POS - Caja");
+        // Al cancelar, nos aseguramos de limpiar cualquier cliente a medias
+        InventarioGlobal.setClienteActivo(null);
+        cambiarVista(event, "MainView.fxml", "Gen POS - Caja Principal");
     }
 
-    // --- UTILIDADES ---
-    private void cambiarVista(ActionEvent event, String fxml, String titulo) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxml));
-            Parent root = loader.load();
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            Scene scene = new Scene(root, stage.getWidth(), stage.getHeight());
-            stage.setScene(scene);
-            stage.setTitle(titulo);
-            stage.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    // --- MÉTODOS AUXILIARES (UX Mejorado) ---
 
-    private void mostrarAlerta(String titulo, String contenido) {
+    private void mostrarAlerta(String titulo, String mensaje) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
-        alert.setContentText(contenido);
+        alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    /**
+     * Cambia la vista manteniendo el tamaño actual de la ventana
+     * para que la transición sea fluida y profesional.
+     */
+    private void cambiarVista(ActionEvent event, String archivoFXML, String titulo) {
+        try {
+            // Usamos la ruta absoluta desde la raíz de resources para evitar errores
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + archivoFXML));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+            // Obtenemos dimensiones actuales para que la ventana no "salte"
+            double ancho = stage.getWidth();
+            double alto = stage.getHeight();
+
+            Scene scene = new Scene(root, ancho, alto);
+
+            // Si tienes estilos globales, puedes volver a cargarlos aquí si es necesario
+            // scene.getStylesheets().add(getClass().getResource("estilos.css").toExternalForm());
+
+            stage.setScene(scene);
+            stage.setTitle(titulo);
+            stage.show();
+
+        } catch (IOException e) {
+            System.err.println("Error crítico al cargar la vista: " + archivoFXML);
+            e.printStackTrace();
+        }
     }
 }
