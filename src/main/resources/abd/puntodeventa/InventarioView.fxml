@@ -1,14 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="$CONTROLLER_NAME$"
-            prefHeight="400.0" prefWidth="600.0" >
+<BorderPane stylesheets="@estilos.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.InventarioController">
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #2c3e50;">
+            <padding><Insets top="15" right="25" bottom="15" left="25"/></padding>
+            <Label text="Gestión de Inventario" textFill="WHITE" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="Admin: Aby" textFill="#bdc3c7" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+            <Button text="Ir a Caja (POS)" onAction="#abrirCaja" style="-fx-background-color: #bdc3c7; -fx-text-fill: #2c3e50; -fx-font-weight: bold; -fx-cursor: hand;"/>
+        </HBox>
+    </top>
 
-</AnchorPane>
+    <center>
+        <HBox>
+            <VBox spacing="10" HBox.hgrow="ALWAYS" style="-fx-background-color: #f8f9fa; -fx-padding: 20;">
+                <TextField fx:id="txtBuscar" promptText="Buscar producto por nombre..." style="-fx-padding: 8px;"/>
+                <TableView fx:id="tablaInventario" VBox.vgrow="ALWAYS" onMouseClicked="#seleccionarProducto">
+                    <columns>
+                        <TableColumn fx:id="colId" text="ID" prefWidth="60"/>
+                        <TableColumn fx:id="colNombre" text="Bebida / Grano" prefWidth="250"/>
+                        <TableColumn fx:id="colPrecio" text="Precio Unitario" prefWidth="120"/>
+                        <TableColumn fx:id="colStock" text="Stock" prefWidth="80"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox prefWidth="420" spacing="25" style="-fx-background-color: #34495e; -fx-padding: 30;">
+                <Label text="Detalles de la Bebida" textFill="WHITE" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+                <GridPane hgap="15" vgap="20">
+                    <Label text="ID:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="txtId" editable="false" promptText="Autogenerado" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-background-color: #2c3e50; -fx-text-fill: white;"/>
+
+                    <Label text="Nombre:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextField fx:id="txtNombre" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-padding: 8px;"/>
+
+                    <Label text="Precio ($):" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <TextField fx:id="txtPrecio" GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-padding: 8px;"/>
+
+                    <Label text="Stock:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <TextField fx:id="txtStock" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-padding: 8px;"/>
+                </GridPane>
+
+                <Region VBox.vgrow="ALWAYS" />
+
+                <VBox spacing="15">
+                    <Button fx:id="btnGuardar" text="GUARDAR NUEVA BEBIDA" maxWidth="Infinity" onAction="#handleGuardar" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
+                    <Button fx:id="btnModificar" text="MODIFICAR SELECCIONADO" maxWidth="Infinity" onAction="#handleModificar" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
+                    <Button text="LIMPIAR FORMULARIO" maxWidth="Infinity" onAction="#handleLimpiar" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
+                </VBox>
+
+                <Label fx:id="lblEstado" textFill="#2ecc71" wrapText="true" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+            </VBox>
+        </HBox>
+    </center>
+</BorderPane>

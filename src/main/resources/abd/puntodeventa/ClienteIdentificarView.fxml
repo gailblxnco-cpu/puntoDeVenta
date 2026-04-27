@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox alignment="CENTER" minHeight="-Infinity" minWidth="-Infinity" spacing="20" style="-fx-background-color: #ecf0f1; -fx-padding: 40;" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="abd.puntodeventa.ClienteController">
+   <children>
+   
+       <Label style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Identificar Cliente" />
+   
+       <VBox spacing="10">
+      <children>
+              <Label style="-fx-font-weight: bold;" text="Número de Teléfono:" />
+              <TextField fx:id="txtTelefonoBusqueda" promptText="Ej. 8331234567" style="-fx-padding: 10px;" />
+              <Button maxWidth="Infinity" onAction="#buscarCliente" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px;" text="BUSCAR CLIENTE" />
+      </children>
+       </VBox>
+   
+       <Separator />
+   
+       <Label style="-fx-text-fill: #7f8c8d;" text="¿El cliente no está registrado?" />
+       <Button maxWidth="Infinity" onAction="#irARegistro" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-cursor: hand;" text="REGISTRAR NUEVO CLIENTE" />
+   
+       <Button onAction="#cerrarVentana" style="-fx-text-fill: #e74c3c; -fx-cursor: hand;" text="Volver a la Caja" />
+   </children>
+</VBox>

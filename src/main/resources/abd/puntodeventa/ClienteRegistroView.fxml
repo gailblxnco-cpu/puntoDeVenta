@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="20" alignment="CENTER" style="-fx-background-color: #f4f7f6; -fx-padding: 40;" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.ClienteController">
+
+    <Label text="Registro de Nuevo Cliente" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+
+    <VBox spacing="15">
+        <VBox spacing="5">
+            <Label text="Nombre Completo:" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtNuevoNombre" promptText="Nombre del cliente" style="-fx-padding: 10px;"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Teléfono:" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtNuevoTelefono" promptText="10 dígitos" style="-fx-padding: 10px;"/>
+        </VBox>
+
+        <Button text="CONFIRMAR REGISTRO" onAction="#registrarCliente" maxWidth="Infinity"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12px; -fx-cursor: hand;"/>
+    </VBox>
+
+    <Separator/>
+
+    <Button text="Ya tiene cuenta (Identificar)" onAction="#irAIdentificacion" maxWidth="Infinity"
+            style="-fx-background-color: transparent; -fx-text-fill: #2980b9; -fx-cursor: hand;"/>
+</VBox>

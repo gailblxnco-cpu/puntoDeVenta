@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
+
+<StackPane stylesheets="@estilos.css" style="-fx-background-color: #2c3e50;" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.LoginController">
+
+    <VBox maxWidth="400" maxHeight="450" spacing="25" alignment="CENTER" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 15, 0, 0, 5);">
+        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
+
+        <Label text="Gen POS" textFill="#2c3e50">
+            <font><Font name="System Bold" size="36"/></font>
+        </Label>
+        <Label text="Inicia sesión para continuar" textFill="#7f8c8d" style="-fx-font-size: 14px;"/>
+
+        <VBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="Usuario:" textFill="#34495e" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtUsuario" promptText="Ej. Aby" style="-fx-padding: 10px; -fx-font-size: 14px;"/>
+        </VBox>
+
+        <VBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="Contraseña:" textFill="#34495e" style="-fx-font-weight: bold;"/>
+            <PasswordField fx:id="txtPassword" promptText="••••••••" style="-fx-padding: 10px; -fx-font-size: 14px;"/>
+        </VBox>
+
+        <Label fx:id="lblError" textFill="#e74c3c" style="-fx-font-weight: bold; -fx-font-size: 13px;" wrapText="true"/>
+
+        <Button text="INICIAR SESIÓN" maxWidth="Infinity" onAction="#handleLogin" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12px; -fx-cursor: hand; -fx-background-radius: 5;"/>
+    </VBox>
+
+</StackPane>
