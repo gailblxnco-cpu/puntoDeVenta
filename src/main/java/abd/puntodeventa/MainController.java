@@ -19,26 +19,29 @@ public class MainController {
     @FXML private TableColumn<Producto, String> colNombre;
     @FXML private TableColumn<Producto, Double> colPrecio;
 
-    // Paneles y Campos
+    // Paneles y Buscador
     @FXML private FlowPane flowProductos;
     @FXML private TextField txtBuscar;
 
-    // Etiquetas de Totales
-    @FXML private Label lblTotal, lblSubtotal, lblClienteActivo, lblDescuento;
+    // Etiquetas de Totales y Fidelización
+    @FXML private Label lblTotal;
+    @FXML private Label lblSubtotal;
+    @FXML private Label lblClienteActivo;
+    @FXML private Label lblDescuento;
 
     private ObservableList<Producto> listaPedido = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        // 1. Vincular columnas con las propiedades del modelo Producto
+        // 1. Configurar columnas de la tabla
         colNombre.setCellValueFactory(d -> d.getValue().nombreProperty());
         colPrecio.setCellValueFactory(d -> d.getValue().precioProperty().asObject());
         tablaPedido.setItems(listaPedido);
 
-        // 2. botones dinámicos de bebidas
+        // 2. Cargar botones de productos con estilo CSS
         cargarInventarioEnPantalla();
 
-        // 3. Refrescar estado de cliente y totales (por si venimos de otra ventana)
+        // 3. Refrescar totales y datos del cliente activo
         actualizarTotales();
     }
 
@@ -47,7 +50,7 @@ public class MainController {
         for (Producto p : InventarioGlobal.getProductos()) {
             Button btnItem = new Button(p.getNombre() + "\n$" + p.getPrecio());
 
-            // Usamos la clase de tu archivo estilos.css
+            // Asignamos la clase del archivo CSS
             btnItem.getStyleClass().add("product-button");
 
             btnItem.setOnAction(e -> {
@@ -62,14 +65,13 @@ public class MainController {
         double subtotal = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
         double descEfectivo = 0;
 
-        // Verificamos si hay alguien en sesión
         Cliente activo = InventarioGlobal.getClienteActivo();
 
         if (activo != null) {
             lblClienteActivo.setText("Cliente: " + activo.getNombre());
 
             if (InventarioGlobal.isUsarPuntosEnVenta()) {
-                // Tasa de conversión: 1 punto = $0.10
+                // Cada punto acumulado equivale a $0.10 de descuento
                 descEfectivo = activo.getPuntos() * 0.1;
                 lblDescuento.setText(String.format("Descuento: -$%.2f (%d pts)", descEfectivo, activo.getPuntos()));
             } else {
@@ -81,79 +83,82 @@ public class MainController {
         }
 
         double totalFinal = Math.max(0, subtotal - descEfectivo);
-        lblSubtotal.setText(String.format("$%.2f", subtotal));
-        lblTotal.setText(String.format("$%.2f", totalFinal));
+        lblSubtotal.setText(String.format("%.2f", subtotal));
+        lblTotal.setText(String.format("%.2f", totalFinal));
     }
 
     @FXML
     public void handlePago(ActionEvent event) {
         if (listaPedido.isEmpty()) {
-            mostrarAlerta("Caja Vacía", "Agregue productos antes de cobrar.");
+            mostrarAlerta("Carrito vacío", "Por favor, agrega productos al pedido.");
             return;
         }
 
         double subtotal = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
-        double desc = 0;
-        Cliente c = InventarioGlobal.getClienteActivo();
-        StringBuilder ticket = new StringBuilder("GEN POS - VENTA FINALIZADA\n\n");
+        double descuento = 0;
+        Cliente cliente = InventarioGlobal.getClienteActivo();
+        StringBuilder ticket = new StringBuilder("DETALLE DE VENTA\n------------------\n");
 
-        if (c != null) {
-            // Aplicar descuento si se canjearon puntos
+        if (cliente != null) {
             if (InventarioGlobal.isUsarPuntosEnVenta()) {
-                desc = c.getPuntos() * 0.1;
-                c.setPuntos(0); // El cliente gastó su saldo
-                ticket.append("Descuento Puntos: -$").append(String.format("%.2f", desc)).append("\n");
+                descuento = cliente.getPuntos() * 0.1;
+                cliente.setPuntos(0); // Se consumen los puntos
+                ticket.append("Puntos canjeados: -$").append(String.format("%.2f", descuento)).append("\n");
             }
 
-            // Ganar nuevos puntos (1 punto por cada $10 de compra)
-            int nuevosPuntos = (int)(subtotal / 10);
-            c.setPuntos(c.getPuntos() + nuevosPuntos);
+            // El cliente gana 1 punto por cada $10 gastados (sobre el subtotal)
+            int nuevosPuntos = (int) (subtotal / 10);
+            cliente.setPuntos(cliente.getPuntos() + nuevosPuntos);
 
-            ticket.append("Cliente: ").append(c.getNombre()).append("\n");
-            ticket.append("Nuevos puntos: +").append(nuevosPuntos).append("\n");
-            ticket.append("Saldo total: ").append(c.getPuntos()).append(" pts\n\n");
+            ticket.append("Cliente: ").append(cliente.getNombre()).append("\n");
+            ticket.append("Puntos ganados: +").append(nuevosPuntos).append("\n");
+            ticket.append("Nuevo saldo: ").append(cliente.getPuntos()).append(" pts\n");
         }
 
-        double totalFinal = Math.max(0, subtotal - desc);
-        ticket.append("TOTAL PAGADO: $").append(String.format("%.2f", totalFinal));
+        double totalFinal = Math.max(0, subtotal - descuento);
+        ticket.append("------------------\nTOTAL: $").append(String.format("%.2f", totalFinal));
 
-        mostrarAlerta("Ticket", ticket.toString());
+        mostrarAlerta("Venta Exitosa", ticket.toString());
 
-        // Limpiar para la siguiente transacción
+        // Limpiar sesión de venta actual
         listaPedido.clear();
         InventarioGlobal.setClienteActivo(null);
         InventarioGlobal.setUsarPuntosEnVenta(false);
         actualizarTotales();
     }
 
-    // NAVEGACIÓN
+
     @FXML
-    public void abrirVentanaCliente(ActionEvent e) {
-        // Ahora abrimos primero la ventana de identificación
-        cambiarVista(e, "ClienteIdentificarView.fxml", "Identificar Cliente");
+    public void volverAlMenu(ActionEvent event) {
+        cambiarVista(event, "MenuPrincipalView.fxml", "Menú Principal");
     }
 
     @FXML
-    public void abrirInventario(ActionEvent e) {
-        cambiarVista(e, "InventarioView.fxml", "Inventario");
+    public void abrirVentanaCliente(ActionEvent event) {
+        cambiarVista(event, "ClienteIdentificarView.fxml", "Identificar Cliente");
+    }
+
+    @FXML
+    public void abrirInventario(ActionEvent event) {
+        cambiarVista(event, "InventarioView.fxml", "Gestión de Inventario");
     }
 
     private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
+            // Usar la ruta absoluta del recurso para mayor estabilidad
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            double ancho = stage.getScene().getWidth();
+            double alto = stage.getScene().getHeight();
 
-            double anchoContenido = stage.getScene().getWidth();
-            double altoContenido = stage.getScene().getHeight();
-
-            Scene scene = new Scene(root, anchoContenido, altoContenido);
-
+            Scene scene = new Scene(root, ancho, alto);
             stage.setScene(scene);
             stage.setTitle(titulo);
             stage.show();
         } catch (IOException e) {
+            System.err.println("Error al cargar la vista: " + fxml);
             e.printStackTrace();
         }
     }

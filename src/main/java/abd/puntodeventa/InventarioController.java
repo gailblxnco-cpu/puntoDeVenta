@@ -9,7 +9,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 
 public class InventarioController {
@@ -41,22 +40,20 @@ public class InventarioController {
             txtNombre.setText(seleccionado.getNombre());
             txtPrecio.setText(String.valueOf(seleccionado.getPrecio()));
             txtStock.setText(String.valueOf(seleccionado.getStock()));
-            lblEstado.setText("Listo para modificar.");
         }
     }
 
     @FXML
     public void handleGuardar(ActionEvent event) {
         if (validarCampos()) {
+            int id = InventarioGlobal.getNextId();
             String nombre = txtNombre.getText();
             double precio = Double.parseDouble(txtPrecio.getText());
             int stock = Integer.parseInt(txtStock.getText());
 
-            int nuevoId = InventarioGlobal.getNextId();
-            Producto nuevoProducto = new Producto(nuevoId, nombre, precio, stock);
-            InventarioGlobal.getProductos().add(nuevoProducto);
-
-            lblEstado.setText("¡Bebida guardada exitosamente!");
+            Producto nuevo = new Producto(id, nombre, precio, stock);
+            InventarioGlobal.getProductos().add(nuevo);
+            lblEstado.setText("Producto guardado con éxito.");
             handleLimpiar(null);
         }
     }
@@ -68,11 +65,10 @@ public class InventarioController {
             seleccionado.nombreProperty().set(txtNombre.getText());
             seleccionado.precioProperty().set(Double.parseDouble(txtPrecio.getText()));
             seleccionado.stockProperty().set(Integer.parseInt(txtStock.getText()));
-
+            lblEstado.setText("Producto modificado correctamente.");
             tablaInventario.refresh();
-            lblEstado.setText("¡Bebida actualizada exitosamente!");
-        } else if (seleccionado == null) {
-            lblEstado.setText("Error: Selecciona una bebida de la tabla.");
+        } else {
+            lblEstado.setText("Selecciona un producto de la tabla.");
         }
     }
 
@@ -98,23 +94,24 @@ public class InventarioController {
     }
 
     @FXML
-    public void abrirCaja(ActionEvent event) {
+    public void volverAlMenu(ActionEvent event) {
+        cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Menú Principal");
+    }
+
+    private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
-
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            double ancho = stage.getScene().getWidth();
+            double alto = stage.getScene().getHeight();
 
-            double anchoContenido = stage.getScene().getWidth();
-            double altoContenido = stage.getScene().getHeight();
-
-            Scene scene = new Scene(root, anchoContenido, altoContenido);
+            Scene scene = new Scene(root, ancho, alto);
             stage.setScene(scene);
-            stage.setTitle("Gen POS - Caja Principal");
+            stage.setTitle(titulo);
             stage.show();
-
         } catch (IOException e) {
-            System.err.println("Error al regresar a la Caja.");
+            System.err.println("Error al cargar: " + fxml);
             e.printStackTrace();
         }
     }

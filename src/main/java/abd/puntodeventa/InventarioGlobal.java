@@ -3,6 +3,7 @@ package abd.puntodeventa;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+
 public class InventarioGlobal {
 
 
@@ -68,4 +69,20 @@ public class InventarioGlobal {
     public static void setUsarPuntosEnVenta(boolean usar) {
         usarPuntosEnVenta = usar;
     }
+
+    // Añade esto a InventarioGlobal.java
+    private static final ObservableList<Usuario> usuarios = FXCollections.observableArrayList();
+    private static Usuario usuarioLogueado;
+
+    static {
+        // ... tus productos y clientes ...
+
+        // Usuario administrador por defecto
+        usuarios.add(new Usuario("admin", "admin123", "ADMIN"));
+        usuarios.add(new Usuario("Aby", "1234", "CAJERO"));
+    }
+
+    public static ObservableList<Usuario> getUsuarios() { return usuarios; }
+    public static Usuario getUsuarioLogueado() { return usuarioLogueado; }
+    public static void setUsuarioLogueado(Usuario u) { usuarioLogueado = u; }
 }
