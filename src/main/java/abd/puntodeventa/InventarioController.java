@@ -1,5 +1,6 @@
 package abd.puntodeventa;
 
+import atlantafx.base.theme.PrimerDark;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -12,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 
+// Imports para la base de datos
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -29,10 +31,12 @@ public class InventarioController {
     @FXML private TextField txtId, txtNombre, txtPrecio, txtStock, txtBuscar;
     @FXML private Label lblEstado;
 
+    // Lista observable para actualizar la tabla en tiempo real
     private ObservableList<Producto> listaInventarioBD = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
+        // Enlazar columnas con las properties del modelo Producto
         colId.setCellValueFactory(d -> d.getValue().idProperty().asObject());
         colNombre.setCellValueFactory(d -> d.getValue().nombreProperty());
         colPrecio.setCellValueFactory(d -> d.getValue().precioProperty().asObject());
@@ -41,7 +45,6 @@ public class InventarioController {
         cargarInventarioDesdeBD();
     }
 
-    // --- LEER (READ) ---
     private void cargarInventarioDesdeBD() {
         listaInventarioBD.clear();
         String sql = "{CALL SP_ObtenerInventario()}";
@@ -61,13 +64,11 @@ public class InventarioController {
             tablaInventario.setItems(listaInventarioBD);
 
         } catch (SQLException e) {
-            lblEstado.setText("Error al cargar el inventario.");
-            lblEstado.setStyle("-fx-text-fill: #e74c3c;"); // Rojo para error
+            mostrarMensajeEstado("Error crítico al cargar BD.", true);
             e.printStackTrace();
         }
     }
 
-    // --- SELECCIONAR RENGLÓN ---
     @FXML
     public void seleccionarProducto(MouseEvent event) {
         Producto seleccionado = tablaInventario.getSelectionModel().getSelectedItem();
@@ -76,77 +77,85 @@ public class InventarioController {
             txtNombre.setText(seleccionado.getNombre());
             txtPrecio.setText(String.valueOf(seleccionado.getPrecio()));
             txtStock.setText(String.valueOf(seleccionado.getStock()));
+            limpiarEstado();
         }
     }
 
-    // --- GUARDAR (INSERT) ---
     @FXML
     public void handleGuardar(ActionEvent event) {
         if (validarCampos()) {
+            String nombre = txtNombre.getText().trim();
+            double precio = Double.parseDouble(txtPrecio.getText().trim());
+            int stock = Integer.parseInt(txtStock.getText().trim());
+
+            // Obtenemos el ID del gerente/cajero logueado para la BD
+            int idEmpleado = SesionActiva.getIdEmpleado();
+
             String sql = "{CALL SP_InsertarProducto(?, ?, ?, ?, ?)}";
 
             try (Connection conn = ConexionDB.getConnection();
                  CallableStatement stmt = conn.prepareCall(sql)) {
 
-                stmt.setString(1, txtNombre.getText().trim());
-                stmt.setDouble(2, Double.parseDouble(txtPrecio.getText().trim()));
-                stmt.setInt(3, Integer.parseInt(txtStock.getText().trim()));
-                stmt.setString(4, "Bebidas"); // Categoría por defecto
+                stmt.setString(1, nombre);
+                stmt.setDouble(2, precio);
+                stmt.setInt(3, stock);
+                stmt.setString(4, "General"); // Categoría por defecto
+                stmt.setInt(5, idEmpleado);
 
-                // ¡Aquí usamos la sesión para registrar quién agregó el producto!
-                stmt.setInt(5, SesionActiva.getIdEmpleado());
+                stmt.executeUpdate(); // Ejecutar guardado en MySQL
 
-                stmt.executeUpdate();
-
-                lblEstado.setStyle("-fx-text-fill: #2ecc71;"); // Verde para éxito
-                lblEstado.setText("Producto guardado con éxito.");
-
+                mostrarMensajeEstado("Producto guardado con éxito.", false);
                 handleLimpiar(null);
+
+                // Refrescamos la tabla consultando nuevamente la BD
                 cargarInventarioDesdeBD();
 
             } catch (SQLException e) {
-                lblEstado.setStyle("-fx-text-fill: #e74c3c;");
-                lblEstado.setText("Error al guardar: " + e.getMessage());
+                mostrarMensajeEstado("Error al guardar en la BD.", true);
+                e.printStackTrace();
             }
         }
     }
 
-    // --- MODIFICAR (UPDATE) ---
     @FXML
     public void handleModificar(ActionEvent event) {
         Producto seleccionado = tablaInventario.getSelectionModel().getSelectedItem();
-        if (seleccionado != null && validarCampos()) {
-            String sql = "{CALL SP_ActualizarProducto(?, ?, ?, ?, ?, ?)}";
+        if (seleccionado != null) {
+            if (validarCampos()) {
+                int id = seleccionado.getId();
+                String nombre = txtNombre.getText().trim();
+                double precio = Double.parseDouble(txtPrecio.getText().trim());
+                int stock = Integer.parseInt(txtStock.getText().trim());
+                int idEmpleado = SesionActiva.getIdEmpleado();
 
-            try (Connection conn = ConexionDB.getConnection();
-                 CallableStatement stmt = conn.prepareCall(sql)) {
+                String sql = "{CALL SP_ActualizarProducto(?, ?, ?, ?, ?, ?)}";
 
-                stmt.setInt(1, seleccionado.getId());
-                stmt.setString(2, txtNombre.getText().trim());
-                stmt.setDouble(3, Double.parseDouble(txtPrecio.getText().trim()));
-                stmt.setInt(4, Integer.parseInt(txtStock.getText().trim()));
-                stmt.setString(5, "Bebidas");
-                stmt.setInt(6, SesionActiva.getIdEmpleado()); // Registra quién lo modificó
+                try (Connection conn = ConexionDB.getConnection();
+                     CallableStatement stmt = conn.prepareCall(sql)) {
 
-                stmt.executeUpdate();
+                    stmt.setInt(1, id);
+                    stmt.setString(2, nombre);
+                    stmt.setDouble(3, precio);
+                    stmt.setInt(4, stock);
+                    stmt.setString(5, "General"); // Categoría
+                    stmt.setInt(6, idEmpleado);
 
-                lblEstado.setStyle("-fx-text-fill: #2ecc71;");
-                lblEstado.setText("Producto modificado correctamente.");
+                    stmt.executeUpdate();
 
-                handleLimpiar(null);
-                cargarInventarioDesdeBD();
+                    mostrarMensajeEstado("Producto modificado correctamente.", false);
+                    handleLimpiar(null);
+                    cargarInventarioDesdeBD(); // Actualizar vista
 
-            } catch (SQLException e) {
-                lblEstado.setStyle("-fx-text-fill: #e74c3c;");
-                lblEstado.setText("Error al modificar: " + e.getMessage());
+                } catch (SQLException e) {
+                    mostrarMensajeEstado("Error al actualizar en la BD.", true);
+                    e.printStackTrace();
+                }
             }
-        } else if (seleccionado == null) {
-            lblEstado.setStyle("-fx-text-fill: #e74c3c;");
-            lblEstado.setText("Selecciona un producto de la tabla primero.");
+        } else {
+            mostrarMensajeEstado("Selecciona un producto de la tabla.", true);
         }
     }
 
-    // --- LIMPIAR FORMULARIO ---
     @FXML
     public void handleLimpiar(ActionEvent event) {
         txtId.clear();
@@ -154,24 +163,20 @@ public class InventarioController {
         txtPrecio.clear();
         txtStock.clear();
         tablaInventario.getSelectionModel().clearSelection();
-        if (event != null) { // Solo limpia el label si fue presionado manualmente el botón
-            lblEstado.setText("");
-        }
+        limpiarEstado();
     }
 
     private boolean validarCampos() {
         try {
             if (txtNombre.getText().trim().isEmpty()) {
-                lblEstado.setStyle("-fx-text-fill: #e74c3c;");
-                lblEstado.setText("El nombre no puede estar vacío.");
+                mostrarMensajeEstado("Error: El nombre no puede estar vacío.", true);
                 return false;
             }
             Double.parseDouble(txtPrecio.getText().trim());
             Integer.parseInt(txtStock.getText().trim());
             return true;
         } catch (NumberFormatException e) {
-            lblEstado.setStyle("-fx-text-fill: #e74c3c;");
-            lblEstado.setText("Error: Precio y Stock deben ser numéricos.");
+            mostrarMensajeEstado("Error: Precio y Stock deben ser numéricos.", true);
             return false;
         }
     }
@@ -181,16 +186,41 @@ public class InventarioController {
         cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Menú Principal");
     }
 
+    // --- UX COMPATIBLE CON ATLANTAFX ---
+    private void mostrarMensajeEstado(String mensaje, boolean esError) {
+        if (lblEstado != null) {
+            lblEstado.setText(mensaje);
+            lblEstado.getStyleClass().removeAll("text-danger", "text-success");
+            if (esError) {
+                lblEstado.getStyleClass().add("text-danger");
+            } else {
+                lblEstado.getStyleClass().add("text-success");
+            }
+        }
+    }
+
+    private void limpiarEstado() {
+        if (lblEstado != null) {
+            lblEstado.setText("");
+            lblEstado.getStyleClass().removeAll("text-danger", "text-success");
+        }
+    }
+
     private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            Scene scene = new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight());
+
+            double ancho = stage.getScene().getWidth();
+            double alto = stage.getScene().getHeight();
+
+            Scene scene = new Scene(root, ancho, alto);
             stage.setScene(scene);
             stage.setTitle(titulo);
             stage.show();
         } catch (IOException e) {
+            System.err.println("Error al cargar: " + fxml);
             e.printStackTrace();
         }
     }

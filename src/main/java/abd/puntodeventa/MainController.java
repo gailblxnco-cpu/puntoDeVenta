@@ -1,5 +1,6 @@
 package abd.puntodeventa;
 
+// Imports de JavaFX y AtlantaFX
 import atlantafx.base.theme.PrimerDark;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,10 +10,22 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
+
+// Imports para MySQL
 import java.io.IOException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 
 public class MainController {
 
@@ -40,15 +53,31 @@ public class MainController {
 
     private void cargarInventarioEnPantalla() {
         flowProductos.getChildren().clear();
-        for (Producto p : InventarioGlobal.getProductos()) {
-            Button btnItem = new Button(p.getNombre() + "\n$" + p.getPrecio());
+        String sql = "{CALL SP_ObtenerProductosVenta()}";
 
-            // Integración nativa con AtlantaFX
-            btnItem.getStyleClass().addAll("button", "accent", "outlined");
-            btnItem.setPrefSize(130, 80);
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
-            btnItem.setOnAction(e -> agregarAlPedido(p));
-            flowProductos.getChildren().add(btnItem);
+            while (rs.next()) {
+                Producto p = new Producto(
+                        rs.getInt("idInventario"),
+                        rs.getString("nombreProducto"),
+                        rs.getDouble("precioUnitario"),
+                        rs.getInt("stockDisponible")
+                );
+
+                Button btnItem = new Button(p.getNombre() + "\n$" + p.getPrecio());
+                btnItem.getStyleClass().addAll("button", "accent", "outlined");
+                btnItem.setPrefSize(130, 80);
+
+                btnItem.setOnAction(e -> agregarAlPedido(p));
+
+                flowProductos.getChildren().add(btnItem);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al cargar productos para venta.");
+            e.printStackTrace();
         }
     }
 
@@ -71,12 +100,65 @@ public class MainController {
             mostrarAlerta("Error", "El pedido está vacío.", Alert.AlertType.WARNING);
             return;
         }
-        mostrarAlerta("Éxito", "Pago procesado correctamente.", Alert.AlertType.INFORMATION);
-        listaPedido.clear();
-        descuentoActual = 0.0;
-        lblClienteActivo.setText("Cliente: Ninguno");
-        lblDescuento.setText("Descuento: $0.00");
-        actualizarTotales();
+
+        double totalConDescuento = totalActual - descuentoActual;
+        if(totalConDescuento < 0) totalConDescuento = 0;
+
+        String sqlPedido = "{CALL SP_CrearPedido(?, ?, ?, ?)}";
+        String sqlDetalle = "{CALL SP_RegistrarDetalle(?, ?, ?, ?)}";
+
+        try (Connection conn = ConexionDB.getConnection()) {
+            // Transacción manual
+            conn.setAutoCommit(false);
+
+            // 1. Crear el Pedido
+            int idPedidoGenerado = 0;
+            try (CallableStatement stmtPedido = conn.prepareCall(sqlPedido)) {
+                stmtPedido.setDouble(1, totalConDescuento);
+
+                // Obtenemos el empleado de la sesión global (Asegúrate de tener la clase SesionActiva.java)
+                stmtPedido.setInt(2, SesionActiva.getIdEmpleado());
+
+                Cliente cActivo = SesionActiva.getClienteActivo();
+                if (cActivo != null) {
+                    stmtPedido.setInt(3, cActivo.getIdCliente());
+                } else {
+                    stmtPedido.setNull(3, Types.INTEGER);
+                }
+
+                stmtPedido.registerOutParameter(4, Types.INTEGER);
+                stmtPedido.execute();
+                idPedidoGenerado = stmtPedido.getInt(4);
+            }
+
+            // 2. Insertar los detalles
+            try (CallableStatement stmtDetalle = conn.prepareCall(sqlDetalle)) {
+                for (Producto p : listaPedido) {
+                    stmtDetalle.setInt(1, idPedidoGenerado);
+                    stmtDetalle.setInt(2, p.getId());
+                    stmtDetalle.setInt(3, 1);
+                    stmtDetalle.setDouble(4, p.getPrecio());
+                    stmtDetalle.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            mostrarAlerta("Éxito", "Venta #" + idPedidoGenerado + " procesada correctamente.", Alert.AlertType.INFORMATION);
+
+            // Limpieza
+            listaPedido.clear();
+            SesionActiva.setClienteActivo(null);
+            SesionActiva.setUsarPuntosEnVenta(false);
+            descuentoActual = 0.0;
+            lblClienteActivo.setText("Cliente: Ninguno");
+            lblDescuento.setText("Descuento: $0.00");
+            actualizarTotales();
+            cargarInventarioEnPantalla();
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error crítico", "Fallo al procesar la venta. Transacción cancelada.", Alert.AlertType.ERROR);
+            e.printStackTrace();
+        }
     }
 
     @FXML

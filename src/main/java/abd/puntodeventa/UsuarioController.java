@@ -1,5 +1,6 @@
 package abd.puntodeventa;
 
+import atlantafx.base.theme.PrimerDark;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -24,15 +25,16 @@ public class UsuarioController {
     @FXML private PasswordField txtNuevoPass;
     @FXML private ComboBox<String> cbRol;
 
-    @FXML private TableView<Usuario> tablaUsuarios;
-    @FXML private TableColumn<Usuario, String> colUser;
-    @FXML private TableColumn<Usuario, String> colRol;
+    @FXML private TableView<Empleado> tablaUsuarios;
+    @FXML private TableColumn<Empleado, String> colUser;
+    @FXML private TableColumn<Empleado, String> colRol;
 
-    private ObservableList<Usuario> listaUsuariosBD = FXCollections.observableArrayList();
+    private ObservableList<Empleado> listaUsuariosBD = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        colUser.setCellValueFactory(cellData -> cellData.getValue().usernameProperty());
+        // Enlazamos a las propiedades correctas del modelo Empleado
+        colUser.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
         colRol.setCellValueFactory(cellData -> cellData.getValue().rolProperty());
 
         cbRol.setItems(FXCollections.observableArrayList("gerente", "vendedor", "mesero"));
@@ -49,18 +51,17 @@ public class UsuarioController {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                listaUsuariosBD.add(new Usuario(
+                listaUsuariosBD.add(new Empleado(
                         rs.getInt("idEmpleado"),
                         rs.getString("nombre"),
-                        rs.getString("contrasena"),
                         rs.getString("rol"),
-                        true // Todos los que devuelve el SP son activos
+                        rs.getString("contrasena")
                 ));
             }
             tablaUsuarios.setItems(listaUsuariosBD);
 
         } catch (SQLException e) {
-            mostrarAlerta("Error de Carga", "No se pudieron cargar los empleados.");
+            mostrarAlerta("Error de Carga", "No se pudieron cargar los empleados.", Alert.AlertType.ERROR);
             e.printStackTrace();
         }
     }
@@ -68,10 +69,10 @@ public class UsuarioController {
     // --- SELECCIONAR RENGLÓN ---
     @FXML
     public void seleccionarUsuario(MouseEvent event) {
-        Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
+        Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
         if (seleccionado != null) {
-            txtNuevoUser.setText(seleccionado.getUsername());
-            txtNuevoPass.setText(seleccionado.getPassword());
+            txtNuevoUser.setText(seleccionado.getNombre());
+            txtNuevoPass.setText(seleccionado.getContrasena());
             cbRol.setValue(seleccionado.getRol());
         }
     }
@@ -90,22 +91,22 @@ public class UsuarioController {
             stmt.setString(3, cbRol.getValue());
 
             stmt.executeUpdate();
-            mostrarAlerta("Éxito", "Usuario creado correctamente.");
+            mostrarAlerta("Éxito", "Usuario creado correctamente.", Alert.AlertType.INFORMATION);
 
             limpiarCampos(null);
             cargarUsuariosDesdeBD();
 
         } catch (SQLException e) {
-            mostrarAlerta("Error", "No se pudo crear el usuario: " + e.getMessage());
+            mostrarAlerta("Error", "No se pudo crear el usuario: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
     // --- MODIFICAR (UPDATE) ---
     @FXML
     public void modificarUsuario(ActionEvent event) {
-        Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
+        Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarAlerta("Error", "Primero selecciona un usuario de la tabla.");
+            mostrarAlerta("Error", "Primero selecciona un usuario de la tabla.", Alert.AlertType.WARNING);
             return;
         }
         if (!validarCampos()) return;
@@ -115,33 +116,34 @@ public class UsuarioController {
         try (Connection conn = ConexionDB.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
 
-            stmt.setInt(1, seleccionado.getId());
+            stmt.setInt(1, seleccionado.getIdEmpleado());
             stmt.setString(2, txtNuevoUser.getText().trim());
             stmt.setString(3, txtNuevoPass.getText().trim());
             stmt.setString(4, cbRol.getValue());
 
             stmt.executeUpdate();
-            mostrarAlerta("Éxito", "Usuario modificado correctamente.");
+            mostrarAlerta("Éxito", "Usuario modificado correctamente.", Alert.AlertType.INFORMATION);
 
             limpiarCampos(null);
             cargarUsuariosDesdeBD();
 
         } catch (SQLException e) {
-            mostrarAlerta("Error", "No se pudo modificar: " + e.getMessage());
+            mostrarAlerta("Error", "No se pudo modificar: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
     // --- ELIMINAR (SOFT DELETE) ---
     @FXML
     public void eliminarUsuario(ActionEvent event) {
-        Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
+        Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarAlerta("Error", "Selecciona un usuario de la tabla para eliminar.");
+            mostrarAlerta("Error", "Selecciona un usuario de la tabla para eliminar.", Alert.AlertType.WARNING);
             return;
         }
 
-        if (seleccionado.getId() == SesionActiva.getIdEmpleado()) {
-            mostrarAlerta("Acción denegada", "No puedes eliminar tu propia cuenta en sesión.");
+        // Validación usando el ID correcto del Empleado y la sesión global
+        if (seleccionado.getIdEmpleado() == SesionActiva.getIdEmpleado()) {
+            mostrarAlerta("Acción denegada", "No puedes eliminar tu propia cuenta en sesión.", Alert.AlertType.WARNING);
             return;
         }
 
@@ -150,15 +152,15 @@ public class UsuarioController {
         try (Connection conn = ConexionDB.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
 
-            stmt.setInt(1, seleccionado.getId());
+            stmt.setInt(1, seleccionado.getIdEmpleado());
             stmt.executeUpdate();
 
-            mostrarAlerta("Éxito", "Usuario dado de baja exitosamente.");
+            mostrarAlerta("Éxito", "Usuario dado de baja exitosamente.", Alert.AlertType.INFORMATION);
             limpiarCampos(null);
-            cargarUsuariosDesdeBD(); // Al refrescar, ya no aparecerá en la tabla
+            cargarUsuariosDesdeBD();
 
         } catch (SQLException e) {
-            mostrarAlerta("Error", "Ocurrió un problema al dar de baja al usuario.");
+            mostrarAlerta("Error", "Ocurrió un problema al dar de baja al usuario.", Alert.AlertType.ERROR);
         }
     }
 
@@ -177,17 +179,22 @@ public class UsuarioController {
 
     private boolean validarCampos() {
         if (txtNuevoUser.getText().trim().isEmpty() || txtNuevoPass.getText().trim().isEmpty() || cbRol.getValue() == null) {
-            mostrarAlerta("Campos incompletos", "Por favor, completa todos los campos.");
+            mostrarAlerta("Campos incompletos", "Por favor, completa todos los campos.", Alert.AlertType.WARNING);
             return false;
         }
         return true;
     }
 
-    private void mostrarAlerta(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    // --- MÉTODOS DE UTILIDAD ---
+    private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
+        Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
+
+        // Aplicamos el tema oscuro a la alerta
+        alert.getDialogPane().getScene().setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+
         alert.showAndWait();
     }
 
@@ -196,6 +203,8 @@ public class UsuarioController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+            // Mantiene el tamaño de la ventana actual para transiciones suaves
             Scene scene = new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight());
             stage.setScene(scene);
             stage.setTitle(titulo);

@@ -10,13 +10,14 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class ClienteController {
 
-    // Componentes de Identificar View
     @FXML private TextField txtTelefonoBusqueda;
-
-    // Componentes de Registro View
     @FXML private TextField txtNuevoNombre;
     @FXML private TextField txtNuevoTelefono;
 
@@ -28,12 +29,31 @@ public class ClienteController {
             return;
         }
 
-        // Simulación de búsqueda (Aquí iría tu lógica de base de datos o listas)
-        if (telefono.equals("8331234567")) {
-            // Si lo encuentra, abrimos su perfil
-            cambiarVistaModal(event, "PerfilClienteView.fxml", "Perfil de Recompensas");
-        } else {
-            mostrarAlerta("No encontrado", "El cliente no existe. Regístrelo.", Alert.AlertType.ERROR);
+        String sql = "{CALL SP_BuscarClientePorTelefono(?)}";
+
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, telefono);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                // Cliente encontrado: Guardamos en memoria global
+                Cliente encontrado = new Cliente(
+                        rs.getInt("idCliente"),
+                        rs.getString("nombreCompleto"),
+                        rs.getString("telefono"),
+                        rs.getInt("puntos")
+                );
+                SesionActiva.setClienteActivo(encontrado);
+
+                cambiarVistaModal(event, "PerfilClienteView.fxml", "Perfil de Recompensas");
+            } else {
+                mostrarAlerta("No encontrado", "El cliente no existe. Proceda a registrarlo.", Alert.AlertType.ERROR);
+            }
+        } catch (SQLException e) {
+            mostrarAlerta("Error BD", "Fallo al buscar cliente.", Alert.AlertType.ERROR);
+            e.printStackTrace();
         }
     }
 
@@ -47,26 +67,33 @@ public class ClienteController {
             return;
         }
 
-        // Lógica de guardado...
-        mostrarAlerta("Éxito", "Cliente " + nombre + " registrado.", Alert.AlertType.INFORMATION);
-        cambiarVistaModal(event, "PerfilClienteView.fxml", "Perfil de Recompensas");
+        String sql = "{CALL SP_InsertarCliente(?, ?)}";
+
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, nombre);
+            stmt.setString(2, telefono);
+            stmt.executeUpdate();
+
+            mostrarAlerta("Éxito", "Cliente " + nombre + " registrado correctamente.", Alert.AlertType.INFORMATION);
+
+            // Opcional: auto-buscarlo después de registrar para cargarlo a memoria
+            txtTelefonoBusqueda = new TextField(telefono); // Truco rápido para la búsqueda
+            buscarCliente(event);
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error BD", "No se pudo registrar el cliente.", Alert.AlertType.ERROR);
+            e.printStackTrace();
+        }
     }
 
     @FXML
-    public void irARegistro(ActionEvent event) {
-        cambiarVistaModal(event, "ClienteRegistroView.fxml", "Nuevo Cliente");
-    }
-
+    public void irARegistro(ActionEvent event) { cambiarVistaModal(event, "ClienteRegistroView.fxml", "Nuevo Cliente"); }
     @FXML
-    public void irAIdentificacion(ActionEvent event) {
-        cambiarVistaModal(event, "ClienteIdentificarView.fxml", "Identificar Cliente");
-    }
-
+    public void irAIdentificacion(ActionEvent event) { cambiarVistaModal(event, "ClienteIdentificarView.fxml", "Identificar Cliente"); }
     @FXML
-    public void cerrarVentana(ActionEvent event) {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.close();
-    }
+    public void cerrarVentana(ActionEvent event) { ((Stage) ((Node) event.getSource()).getScene().getWindow()).close(); }
 
     private void cambiarVistaModal(ActionEvent event, String fxml, String titulo) {
         try {
@@ -75,9 +102,7 @@ public class ClienteController {
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setTitle(titulo);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
