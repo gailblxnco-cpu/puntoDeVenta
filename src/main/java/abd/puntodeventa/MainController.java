@@ -39,7 +39,6 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        // Mostrar cajero real de la sesión
         if (SesionActiva.getNombre() != null) {
             lblCajero.setText("Sesión: " + SesionActiva.getNombre());
         }
@@ -47,14 +46,12 @@ public class MainController {
         colNombre.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
         colPrecio.setCellValueFactory(cellData -> cellData.getValue().precioProperty().asObject());
 
-        // BLOQUEOS DE SEGURIDAD
         tablaPedido.setEditable(false);
         colNombre.setReorderable(false);
         colPrecio.setReorderable(false);
         colNombre.setResizable(false);
         colPrecio.setResizable(false);
 
-        // AMARRE DE ANCHO: 70% y 30%, restando 2px para evitar barras horizontales
         colNombre.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.70).subtract(2));
         colPrecio.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.30).subtract(2));
 
@@ -107,15 +104,33 @@ public class MainController {
         }
     }
 
+    // --- MÉTODO OPCIONAL: Por si quieres agregar un botón de "Quitar Cliente" en tu barra lateral ---
+    @FXML
+    public void quitarCliente(ActionEvent event) {
+        SesionActiva.setClienteActivo(null);
+        SesionActiva.setUsarPuntosEnVenta(false);
+        actualizarTotales();
+    }
+
+    // --- EL CORAZÓN DE LA SOLUCIÓN: Única Fuente de la Verdad ---
     private void actualizarTotales() {
         totalActual = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
 
         double descuentoReal = 0.0;
         Cliente cActivo = SesionActiva.getClienteActivo();
 
-        if (cActivo != null && SesionActiva.isUsarPuntosEnVenta()) {
-            double descuentoMaximo = cActivo.getPuntos() * 0.10;
-            descuentoReal = Math.min(totalActual, descuentoMaximo);
+        // Sincronización OBLIGATORIA entre la memoria y lo que ve el usuario
+        if (cActivo != null) {
+            lblClienteActivo.setText("👤 Cliente: " + cActivo.getNombre());
+
+            if (SesionActiva.isUsarPuntosEnVenta()) {
+                double descuentoMaximo = cActivo.getPuntos() * 0.10;
+                descuentoReal = Math.min(totalActual, descuentoMaximo);
+            }
+        } else {
+            // Si la memoria dice null, obligamos a la interfaz a limpiarse
+            lblClienteActivo.setText("👤 Público General");
+            SesionActiva.setUsarPuntosEnVenta(false);
         }
 
         descuentoActual = descuentoReal;
@@ -195,9 +210,7 @@ public class MainController {
             listaPedido.clear();
             SesionActiva.setClienteActivo(null);
             SesionActiva.setUsarPuntosEnVenta(false);
-            descuentoActual = 0.0;
-            lblClienteActivo.setText("👤 Público General");
-            actualizarTotales();
+            actualizarTotales(); // Con la nueva lógica, esto solíto reiniciará etiquetas y montos a $0.00
             cargarInventarioEnPantalla();
 
         } catch (SQLException e) {
@@ -209,14 +222,7 @@ public class MainController {
     @FXML
     public void abrirVentanaCliente(ActionEvent event) {
         abrirModalAndWait("ClienteIdentificarView.fxml", "Identificar Cliente");
-
-        Cliente c = SesionActiva.getClienteActivo();
-        if (c != null) {
-            lblClienteActivo.setText("👤 Cliente: " + c.getNombre());
-        } else {
-            lblClienteActivo.setText("👤 Público General");
-        }
-
+        // Quitamos la lógica de los if/else de aquí, ahora actualizarTotales() se encarga de todo.
         actualizarTotales();
     }
 

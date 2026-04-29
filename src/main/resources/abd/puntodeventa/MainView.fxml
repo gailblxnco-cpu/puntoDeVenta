@@ -13,10 +13,11 @@
             <Separator style="-fx-padding: 10 0;"/>
 
             <Button text="🏠 Menú Principal" onAction="#volverAlMenu" maxWidth="Infinity" styleClass="flat"/>
-            <Button text="👤 Buscar Clientes" onAction="#abrirVentanaCliente" maxWidth="Infinity" styleClass="warning, flat"/>
+            <Button text="👤 Buscar Cliente" onAction="#abrirVentanaCliente" maxWidth="Infinity" styleClass="warning, flat"/>
 
             <Region VBox.vgrow="ALWAYS" />
-            <Label fx:id="lblCajero" styleClass="text-muted, caption"/>
+
+            <Label fx:id="lblCajero" styleClass="text-muted, caption" wrapText="true"/>
         </VBox>
     </left>
 
@@ -36,7 +37,7 @@
 
                 <Button text="Quitar Seleccionado" onAction="#quitarArticulo" maxWidth="Infinity" styleClass="danger, outlined"/>
 
-                <VBox spacing="5" styleClass="bg-subtle" style="-fx-padding: 10; -fx-background-radius: 8;">
+                <VBox spacing="5" styleClass="bg-subtle" style="-fx-padding: 12; -fx-background-radius: 8;">
                     <Label fx:id="lblClienteActivo" text="👤 Público General" styleClass="text-bold"/>
                     <Separator/>
 
@@ -54,11 +55,15 @@
                         <Label fx:id="lblTotal" text="0.00" styleClass="title-3"/>
                     </HBox>
                 </VBox>
-                <Button text="💵 PROCESAR PAGO" onAction="#handlePago" maxWidth="Infinity" prefHeight="40" styleClass="success, elevated-2"/>
+
+                <Button text="💵 PROCESAR PAGO" onAction="#handlePago" maxWidth="Infinity" prefHeight="45" styleClass="success, elevated-2"/>
             </VBox>
 
             <VBox HBox.hgrow="ALWAYS" spacing="15" styleClass="card">
-                <TextField fx:id="txtBuscar" promptText="🔍 Buscar producto..."/>
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <TextField fx:id="txtBuscar" promptText="🔍 Buscar producto..." HBox.hgrow="ALWAYS"/>
+                </HBox>
+
                 <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
                     <FlowPane fx:id="flowProductos" hgap="15" vgap="15" />
                 </ScrollPane>
