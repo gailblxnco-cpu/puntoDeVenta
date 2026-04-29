@@ -16,16 +16,28 @@ public class PerfilClienteController {
 
     @FXML
     public void initialize() {
-        // Datos simulados (Aquí jalarías los datos del cliente real)
-        lblNombreCliente.setText("Aby");
-        lblTelefonoCliente.setText("833-123-4567");
-        lblPuntos.setText("150");
+        Cliente c = SesionActiva.getClienteActivo();
+        if (c != null) {
+            lblNombreCliente.setText(c.getNombre());
+            lblTelefonoCliente.setText(c.getTelefono());
+            lblPuntos.setText(String.valueOf(c.getPuntos()));
+        }
     }
 
     @FXML
     public void aplicarPuntos(ActionEvent event) {
-        // Lógica para enviar descuento a MainController...
-        mostrarAlerta("Descuento Aplicado", "Se han descontado 150 puntos ($15.00 MXN) de la venta actual.", Alert.AlertType.INFORMATION);
+        SesionActiva.setUsarPuntosEnVenta(true);
+
+        Cliente c = SesionActiva.getClienteActivo();
+        double descuentoAproximado = c.getPuntos() * 0.10;
+
+        mostrarAlerta("Descuento Activado", "Se aplicará un descuento de $" + String.format("%.2f", descuentoAproximado) + " MXN en la venta actual.", Alert.AlertType.INFORMATION);
+        regresarACaja(event);
+    }
+
+    @FXML
+    public void continuarSinPuntos(ActionEvent event) {
+        SesionActiva.setUsarPuntosEnVenta(false);
         regresarACaja(event);
     }
 

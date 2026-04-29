@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.handleLogin">
+<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.LoginController">
     <VBox maxWidth="400" maxHeight="450" spacing="25" alignment="CENTER" styleClass="card, elevated-3">
         <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
