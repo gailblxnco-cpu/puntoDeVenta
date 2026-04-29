@@ -31,6 +31,7 @@ public class MainController {
     @FXML private Label lblTotal;
     @FXML private TextField txtBuscar;
     @FXML private FlowPane flowProductos;
+    @FXML private Label lblCajero;
 
     private ObservableList<Producto> listaPedido = FXCollections.observableArrayList();
     private double totalActual = 0.0;
@@ -38,20 +39,24 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        // Mostrar cajero real de la sesión
+        if (SesionActiva.getNombre() != null) {
+            lblCajero.setText("Sesión: " + SesionActiva.getNombre());
+        }
+
         colNombre.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
         colPrecio.setCellValueFactory(cellData -> cellData.getValue().precioProperty().asObject());
 
-        // BLOQUEO TOTAL
+        // BLOQUEOS DE SEGURIDAD
         tablaPedido.setEditable(false);
         colNombre.setReorderable(false);
         colPrecio.setReorderable(false);
         colNombre.setResizable(false);
         colPrecio.setResizable(false);
 
-        // LA MAGIA: Amarramos el ancho de las columnas al ancho total de la tabla
-        // 70% para el nombre, 29% para el precio (dejamos 1% para la barra de scroll y bordes)
-        colNombre.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.70));
-        colPrecio.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.29));
+        // AMARRE DE ANCHO: 70% y 30%, restando 2px para evitar barras horizontales
+        colNombre.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.70).subtract(2));
+        colPrecio.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.30).subtract(2));
 
         tablaPedido.setItems(listaPedido);
         cargarInventarioEnPantalla();
@@ -88,6 +93,18 @@ public class MainController {
     private void agregarAlPedido(Producto p) {
         listaPedido.add(p);
         actualizarTotales();
+    }
+
+    @FXML
+    public void quitarArticulo(ActionEvent event) {
+        Producto seleccionado = tablaPedido.getSelectionModel().getSelectedItem();
+        if (seleccionado != null) {
+            listaPedido.remove(seleccionado);
+            actualizarTotales();
+            tablaPedido.getSelectionModel().clearSelection();
+        } else {
+            mostrarAlerta("Atención", "Selecciona un artículo del ticket para quitarlo.", Alert.AlertType.WARNING);
+        }
     }
 
     private void actualizarTotales() {
@@ -179,7 +196,7 @@ public class MainController {
             SesionActiva.setClienteActivo(null);
             SesionActiva.setUsarPuntosEnVenta(false);
             descuentoActual = 0.0;
-            lblClienteActivo.setText("👤 Cliente: Ninguno");
+            lblClienteActivo.setText("👤 Público General");
             actualizarTotales();
             cargarInventarioEnPantalla();
 
@@ -197,7 +214,7 @@ public class MainController {
         if (c != null) {
             lblClienteActivo.setText("👤 Cliente: " + c.getNombre());
         } else {
-            lblClienteActivo.setText("👤 Cliente: Ninguno");
+            lblClienteActivo.setText("👤 Público General");
         }
 
         actualizarTotales();

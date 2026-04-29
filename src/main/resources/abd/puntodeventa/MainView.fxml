@@ -4,33 +4,40 @@
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.MainController">
-    <top>
-        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="bg-subtle">
-            <padding><Insets top="15" right="20" bottom="15" left="20"/></padding>
-            <Label text="Gen POS" styleClass="title-3"/>
-            <Region HBox.hgrow="ALWAYS" />
-            <Button text="🏠 Menú Principal" onAction="#volverAlMenu" styleClass="elevated-1"/>
-            <Button text="👤 Cliente" onAction="#abrirVentanaCliente" styleClass="warning, elevated-1"/>
-            <Label text="Sesión: Aby" styleClass="text-muted"/>
-        </HBox>
-    </top>
+
+    <left>
+        <VBox spacing="15" styleClass="bg-inset" prefWidth="180">
+            <padding><Insets top="20" right="15" bottom="20" left="15"/></padding>
+
+            <Label text="☕ Gen POS" styleClass="title-3" wrapText="true"/>
+            <Separator style="-fx-padding: 10 0;"/>
+
+            <Button text="🏠 Menú Principal" onAction="#volverAlMenu" maxWidth="Infinity" styleClass="flat"/>
+            <Button text="👤 Buscar Clientes" onAction="#abrirVentanaCliente" maxWidth="Infinity" styleClass="warning, flat"/>
+
+            <Region VBox.vgrow="ALWAYS" />
+            <Label fx:id="lblCajero" styleClass="text-muted, caption"/>
+        </VBox>
+    </left>
 
     <center>
         <HBox spacing="15">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
 
-            <VBox prefWidth="400" spacing="12" styleClass="card">
+            <VBox prefWidth="350" spacing="12" styleClass="card">
                 <Label text="Detalle de Venta" styleClass="title-4"/>
 
-                <TableView fx:id="tablaPedido" VBox.vgrow="ALWAYS" maxHeight="Infinity">
+                <TableView fx:id="tablaPedido" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="colNombre" text="Producto" />
                         <TableColumn fx:id="colPrecio" text="Precio" />
                     </columns>
                 </TableView>
 
+                <Button text="Quitar Seleccionado" onAction="#quitarArticulo" maxWidth="Infinity" styleClass="danger, outlined"/>
+
                 <VBox spacing="5" styleClass="bg-subtle" style="-fx-padding: 10; -fx-background-radius: 8;">
-                    <Label fx:id="lblClienteActivo" text="👤 Cliente: Ninguno" styleClass="text-bold"/>
+                    <Label fx:id="lblClienteActivo" text="👤 Público General" styleClass="text-bold"/>
                     <Separator/>
 
                     <HBox alignment="CENTER_LEFT">
