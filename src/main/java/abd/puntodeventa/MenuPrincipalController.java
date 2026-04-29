@@ -22,7 +22,7 @@ public class MenuPrincipalController {
      */
     @FXML
     public void initialize() {
-        // Obtenemos el rol desde la sesión que guardó el LoginController
+        // Obtenemos el rol desde la sesión que guardó el handleLogin
         String rol = SesionActiva.getRol();
 
         // Validamos usando los roles exactos de la base de datos ('gerente')
