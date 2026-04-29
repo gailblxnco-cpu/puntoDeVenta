@@ -22,14 +22,25 @@ public class MenuPrincipalController {
      */
     @FXML
     public void initialize() {
-        Usuario logueado = InventarioGlobal.getUsuarioLogueado();
+        // Obtenemos el rol desde la sesión que guardó el LoginController
+        String rol = SesionActiva.getRol();
 
-        if (logueado == null || !logueado.getRol().equals("ADMIN")) {
+        // Validamos usando los roles exactos de la base de datos ('gerente')
+        if (rol == null || !rol.equals("gerente")) {
             if (btnUsuarios != null) {
                 btnUsuarios.setVisible(false);
                 btnUsuarios.setManaged(false);
             }
         }
+
+        // Opcional: Si el rol es 'mesero', quizás tampoco deba ver el Inventario
+        /*
+        if (rol != null && rol.equals("mesero")) {
+            // Suponiendo que tienes un @FXML private Button btnInventario;
+            btnInventario.setVisible(false);
+            btnInventario.setManaged(false);
+        }
+        */
     }
 
     // --- MÉTODOS DE NAVEGACIÓN ---
@@ -56,7 +67,8 @@ public class MenuPrincipalController {
 
     @FXML
     public void cerrarSesion(ActionEvent event) {
-        InventarioGlobal.setUsuarioLogueado(null);
+        // Borramos los datos de la sesión actual
+        SesionActiva.setUsuario(0, null, null);
         cambiarVista(event, "LoginView.fxml", "Gen POS - Iniciar Sesión");
     }
 

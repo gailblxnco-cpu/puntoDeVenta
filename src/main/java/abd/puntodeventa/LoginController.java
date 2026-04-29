@@ -1,82 +1,94 @@
 package abd.puntodeventa;
 
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
 
 public class LoginController {
 
+    // Asegúrate de que estos fx:id coincidan con tu LoginView.fxml
     @FXML private TextField txtUsuario;
     @FXML private PasswordField txtPassword;
     @FXML private Label lblError;
 
-    /**
-     * Procesa el intento de inicio de sesión comparando con la
-     * lista de usuarios en InventarioGlobal.
-     */
     @FXML
-    public void handleLogin(ActionEvent event) {
-        String userIn = txtUsuario.getText().trim();
-        String passIn = txtPassword.getText().trim();
+    public void validarIngreso() {
+        String usuario = txtUsuario.getText();
+        String password = txtPassword.getText();
 
-        lblError.setText(""); // Limpiamos errores previos
-
-        if (userIn.isEmpty() || passIn.isEmpty()) {
-            lblError.setText("Por favor, llena todos los campos.");
+        if (usuario.isEmpty() || password.isEmpty()) {
+            lblError.setText("Por favor, llena ambos campos.");
             return;
         }
 
-        // Buscamos al usuario en nuestra "base de datos" temporal
-        boolean encontrado = false;
-        for (Usuario u : InventarioGlobal.getUsuarios()) {
-            if (u.getUsername().equals(userIn) && u.getPassword().equals(passIn)) {
-                // GUARDAMOS EL USUARIO LOGUEADO: Vital para el control de roles
-                InventarioGlobal.setUsuarioLogueado(u);
+        // Sintaxis para llamar al procedimiento almacenado
+        String sql = "{CALL ValidarLogin(?, ?)}";
 
-                // Navegamos al Menú Principal
-                cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Panel de Control");
-                encontrado = true;
-                break;
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            // Pasar los parámetros al procedimiento
+            stmt.setString(1, usuario);
+            stmt.setString(2, password);
+
+            // Ejecutar y obtener el resultado
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                // Si entra aquí, las credenciales son correctas
+                int id = rs.getInt("idEmpleado");
+                String nombre = rs.getString("nombre");
+                String rol = rs.getString("rol");
+
+                // Guardamos los datos del usuario en la sesión
+                SesionActiva.setUsuario(id, nombre, rol);
+                lblError.setText("¡Bienvenido, " + nombre + "!");
+
+                // AQUÍ VA EL CÓDIGO PARA ABRIR EL MainView o MenuPrincipalView
+                abrirMenuPrincipal();
+
+            } else {
+                // Si no hay resultados, el usuario o password están mal
+                lblError.setText("Usuario o contraseña incorrectos.");
             }
-        }
 
-        if (!encontrado) {
-            lblError.setText("Usuario o contraseña incorrectos.");
+        } catch (SQLException e) {
+            lblError.setText("Error al conectar con la base de datos.");
+            e.printStackTrace();
         }
     }
 
-    /**
-     * Método de navegación corregido para mantener el tamaño de la escena
-     * y evitar que la ventana crezca por los bordes del sistema operativo.
-     */
-    private void cambiarVista(ActionEvent event, String fxml, String titulo) {
+    private void abrirMenuPrincipal() {
         try {
-            // Usamos la ruta absoluta del recurso para evitar errores en IntelliJ
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
+            // 1. Cargar el archivo FXML del menú principal
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("MenuPrincipalView.fxml"));
             Parent root = loader.load();
 
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            // 2. Obtener la ventana (Stage) actual usando cualquier elemento de la interfaz (ej. txtUsuario)
+            Stage stage = (Stage) txtUsuario.getScene().getWindow();
 
-            // Obtenemos el tamaño del CONTENIDO (Scene), no de la ventana (Stage)
-            double ancho = stage.getScene().getWidth();
-            double alto = stage.getScene().getHeight();
-
-            Scene scene = new Scene(root, ancho, alto);
-
+            // 3. Crear la nueva escena y establecerla en la ventana
+            Scene scene = new Scene(root);
             stage.setScene(scene);
-            stage.setTitle(titulo);
-            stage.centerOnScreen(); // Opcional: centra la ventana al cambiar de módulo
+
+            // 4. (Opcional) Personalizar el título de la ventana con el nombre del usuario
+            stage.setTitle("Punto de Venta - Sesión de: " + SesionActiva.getNombre() + " (" + SesionActiva.getRol() + ")");
+            stage.centerOnScreen(); // Centrar la ventana
             stage.show();
 
         } catch (IOException e) {
-            lblError.setText("Error crítico: No se pudo cargar " + fxml);
             e.printStackTrace();
+            lblError.setText("Error al cargar la pantalla del menú.");
         }
     }
 }
