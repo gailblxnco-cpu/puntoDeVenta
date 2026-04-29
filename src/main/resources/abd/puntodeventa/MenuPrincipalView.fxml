@@ -13,12 +13,12 @@
         </VBox>
 
         <FlowPane hgap="30" vgap="30" alignment="CENTER" prefWrapLength="550">
-            <Button text="PUNTO DE VENTA" onAction="#irAVentas" prefWidth="240" prefHeight="160" styleClass="accent"/>
-            <Button text="INVENTARIO" onAction="#irAInventario" prefWidth="240" prefHeight="160" styleClass="success"/>
-            <Button fx:id="btnUsuarios" text="USUARIOS (ADMIN)" onAction="#irAUsuarios" prefWidth="240" prefHeight="160" styleClass="danger"/>
-            <Button text="REPORTES" onAction="#irAReportes" prefWidth="240" prefHeight="160" styleClass="warning"/>
+            <Button text="🛒 PUNTO DE VENTA" onAction="#irAVentas" prefWidth="240" prefHeight="160" styleClass="accent, elevated-2"/>
+            <Button text="📦 INVENTARIO" onAction="#irAInventario" prefWidth="240" prefHeight="160" styleClass="success, elevated-2"/>
+            <Button fx:id="btnUsuarios" text="👥 USUARIOS (ADMIN)" onAction="#irAUsuarios" prefWidth="240" prefHeight="160" styleClass="danger, elevated-2"/>
+            <Button text="📊 REPORTES" onAction="#irAReportes" prefWidth="240" prefHeight="160" styleClass="warning, elevated-2"/>
         </FlowPane>
 
-        <Button text="CERRAR SESIÓN" onAction="#cerrarSesion" styleClass="flat, danger"/>
+        <Button text="🚪 CERRAR SESIÓN" onAction="#cerrarSesion" styleClass="danger, elevated-1"/>
     </VBox>
 </StackPane>

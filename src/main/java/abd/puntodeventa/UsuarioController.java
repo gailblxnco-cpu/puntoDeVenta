@@ -33,15 +33,21 @@ public class UsuarioController {
 
     @FXML
     public void initialize() {
-        // Enlazamos a las propiedades correctas del modelo Empleado
         colUser.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
         colRol.setCellValueFactory(cellData -> cellData.getValue().rolProperty());
+
+        // BLOQUEO DE LA TABLA (Sin setResizable para permitir que se estiren solas)
+        tablaUsuarios.setEditable(false);
+        colUser.setReorderable(false);
+        colRol.setReorderable(false);
+
+        // Esto fuerza a las columnas a repartirse el espacio sin dejar huecos vacíos al final
+        tablaUsuarios.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         cbRol.setItems(FXCollections.observableArrayList("gerente", "vendedor", "mesero"));
         cargarUsuariosDesdeBD();
     }
 
-    // --- LEER (READ) ---
     private void cargarUsuariosDesdeBD() {
         listaUsuariosBD.clear();
         String sql = "{CALL SP_ObtenerEmpleados()}";
@@ -66,7 +72,6 @@ public class UsuarioController {
         }
     }
 
-    // --- SELECCIONAR RENGLÓN ---
     @FXML
     public void seleccionarUsuario(MouseEvent event) {
         Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
@@ -77,7 +82,6 @@ public class UsuarioController {
         }
     }
 
-    // --- CREAR (CREATE) ---
     @FXML
     public void crearUsuario(ActionEvent event) {
         if (!validarCampos()) return;
@@ -101,7 +105,6 @@ public class UsuarioController {
         }
     }
 
-    // --- MODIFICAR (UPDATE) ---
     @FXML
     public void modificarUsuario(ActionEvent event) {
         Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
@@ -132,7 +135,6 @@ public class UsuarioController {
         }
     }
 
-    // --- ELIMINAR (SOFT DELETE) ---
     @FXML
     public void eliminarUsuario(ActionEvent event) {
         Empleado seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
@@ -141,7 +143,6 @@ public class UsuarioController {
             return;
         }
 
-        // Validación usando el ID correcto del Empleado y la sesión global
         if (seleccionado.getIdEmpleado() == SesionActiva.getIdEmpleado()) {
             mostrarAlerta("Acción denegada", "No puedes eliminar tu propia cuenta en sesión.", Alert.AlertType.WARNING);
             return;
@@ -185,16 +186,12 @@ public class UsuarioController {
         return true;
     }
 
-    // --- MÉTODOS DE UTILIDAD ---
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
         Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
-
-        // Aplicamos el tema oscuro a la alerta
         alert.getDialogPane().getScene().setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
-
         alert.showAndWait();
     }
 
@@ -203,8 +200,6 @@ public class UsuarioController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-            // Mantiene el tamaño de la ventana actual para transiciones suaves
             Scene scene = new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight());
             stage.setScene(scene);
             stage.setTitle(titulo);

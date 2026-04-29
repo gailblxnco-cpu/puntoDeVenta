@@ -13,7 +13,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 
-// Imports para la base de datos
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -31,16 +30,24 @@ public class InventarioController {
     @FXML private TextField txtId, txtNombre, txtPrecio, txtStock, txtBuscar;
     @FXML private Label lblEstado;
 
-    // Lista observable para actualizar la tabla en tiempo real
     private ObservableList<Producto> listaInventarioBD = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        // Enlazar columnas con las properties del modelo Producto
         colId.setCellValueFactory(d -> d.getValue().idProperty().asObject());
         colNombre.setCellValueFactory(d -> d.getValue().nombreProperty());
         colPrecio.setCellValueFactory(d -> d.getValue().precioProperty().asObject());
         colStock.setCellValueFactory(d -> d.getValue().stockProperty().asObject());
+
+        // BLOQUEAMOS LA EDICIÓN Y REORDENAMIENTO (Pero permitimos que JavaFX redimensione)
+        tablaInventario.setEditable(false);
+        colId.setReorderable(false);
+        colNombre.setReorderable(false);
+        colPrecio.setReorderable(false);
+        colStock.setReorderable(false);
+
+        // Fuerza a las columnas a estirarse y eliminar la columna fantasma
+        tablaInventario.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         cargarInventarioDesdeBD();
     }
@@ -87,8 +94,6 @@ public class InventarioController {
             String nombre = txtNombre.getText().trim();
             double precio = Double.parseDouble(txtPrecio.getText().trim());
             int stock = Integer.parseInt(txtStock.getText().trim());
-
-            // Obtenemos el ID del gerente/cajero logueado para la BD
             int idEmpleado = SesionActiva.getIdEmpleado();
 
             String sql = "{CALL SP_InsertarProducto(?, ?, ?, ?, ?)}";
@@ -99,15 +104,13 @@ public class InventarioController {
                 stmt.setString(1, nombre);
                 stmt.setDouble(2, precio);
                 stmt.setInt(3, stock);
-                stmt.setString(4, "General"); // Categoría por defecto
+                stmt.setString(4, "General");
                 stmt.setInt(5, idEmpleado);
 
-                stmt.executeUpdate(); // Ejecutar guardado en MySQL
+                stmt.executeUpdate();
 
                 mostrarMensajeEstado("Producto guardado con éxito.", false);
                 handleLimpiar(null);
-
-                // Refrescamos la tabla consultando nuevamente la BD
                 cargarInventarioDesdeBD();
 
             } catch (SQLException e) {
@@ -137,14 +140,14 @@ public class InventarioController {
                     stmt.setString(2, nombre);
                     stmt.setDouble(3, precio);
                     stmt.setInt(4, stock);
-                    stmt.setString(5, "General"); // Categoría
+                    stmt.setString(5, "General");
                     stmt.setInt(6, idEmpleado);
 
                     stmt.executeUpdate();
 
                     mostrarMensajeEstado("Producto modificado correctamente.", false);
                     handleLimpiar(null);
-                    cargarInventarioDesdeBD(); // Actualizar vista
+                    cargarInventarioDesdeBD();
 
                 } catch (SQLException e) {
                     mostrarMensajeEstado("Error al actualizar en la BD.", true);
@@ -186,7 +189,6 @@ public class InventarioController {
         cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Menú Principal");
     }
 
-    // --- UX COMPATIBLE CON ATLANTAFX ---
     private void mostrarMensajeEstado(String mensaje, boolean esError) {
         if (lblEstado != null) {
             lblEstado.setText(mensaje);
@@ -220,7 +222,6 @@ public class InventarioController {
             stage.setTitle(titulo);
             stage.show();
         } catch (IOException e) {
-            System.err.println("Error al cargar: " + fxml);
             e.printStackTrace();
         }
     }

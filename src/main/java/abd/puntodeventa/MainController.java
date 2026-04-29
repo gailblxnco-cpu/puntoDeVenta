@@ -1,6 +1,5 @@
 package abd.puntodeventa;
 
-// Imports de JavaFX y AtlantaFX
 import atlantafx.base.theme.PrimerDark;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,16 +9,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
 
-// Imports para MySQL
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -33,6 +26,7 @@ public class MainController {
     @FXML private TableColumn<Producto, String> colNombre;
     @FXML private TableColumn<Producto, Double> colPrecio;
     @FXML private Label lblClienteActivo;
+    @FXML private Label lblSubtotal;
     @FXML private Label lblDescuento;
     @FXML private Label lblTotal;
     @FXML private TextField txtBuscar;
@@ -46,8 +40,20 @@ public class MainController {
     public void initialize() {
         colNombre.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
         colPrecio.setCellValueFactory(cellData -> cellData.getValue().precioProperty().asObject());
-        tablaPedido.setItems(listaPedido);
 
+        // BLOQUEO TOTAL
+        tablaPedido.setEditable(false);
+        colNombre.setReorderable(false);
+        colPrecio.setReorderable(false);
+        colNombre.setResizable(false);
+        colPrecio.setResizable(false);
+
+        // LA MAGIA: Amarramos el ancho de las columnas al ancho total de la tabla
+        // 70% para el nombre, 29% para el precio (dejamos 1% para la barra de scroll y bordes)
+        colNombre.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.70));
+        colPrecio.prefWidthProperty().bind(tablaPedido.widthProperty().multiply(0.29));
+
+        tablaPedido.setItems(listaPedido);
         cargarInventarioEnPantalla();
     }
 
@@ -68,15 +74,13 @@ public class MainController {
                 );
 
                 Button btnItem = new Button(p.getNombre() + "\n$" + p.getPrecio());
-                btnItem.getStyleClass().addAll("button", "accent", "outlined");
+                btnItem.getStyleClass().addAll("button", "accent", "elevated-1");
                 btnItem.setPrefSize(130, 80);
 
                 btnItem.setOnAction(e -> agregarAlPedido(p));
-
                 flowProductos.getChildren().add(btnItem);
             }
         } catch (SQLException e) {
-            System.err.println("Error al cargar productos para venta.");
             e.printStackTrace();
         }
     }
@@ -88,9 +92,20 @@ public class MainController {
 
     private void actualizarTotales() {
         totalActual = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
-        double totalConDescuento = totalActual - descuentoActual;
-        if(totalConDescuento < 0) totalConDescuento = 0;
 
+        double descuentoReal = 0.0;
+        Cliente cActivo = SesionActiva.getClienteActivo();
+
+        if (cActivo != null && SesionActiva.isUsarPuntosEnVenta()) {
+            double descuentoMaximo = cActivo.getPuntos() * 0.10;
+            descuentoReal = Math.min(totalActual, descuentoMaximo);
+        }
+
+        descuentoActual = descuentoReal;
+        double totalConDescuento = totalActual - descuentoReal;
+
+        lblSubtotal.setText(String.format("$%.2f", totalActual));
+        lblDescuento.setText(String.format("🎁 Descuento: -$%.2f", descuentoActual));
         lblTotal.setText(String.format("$%.2f", totalConDescuento));
     }
 
@@ -101,22 +116,18 @@ public class MainController {
             return;
         }
 
-        double totalConDescuento = totalActual - descuentoActual;
-        if(totalConDescuento < 0) totalConDescuento = 0;
+        double totalFinal = totalActual - descuentoActual;
 
         String sqlPedido = "{CALL SP_CrearPedido(?, ?, ?, ?)}";
         String sqlDetalle = "{CALL SP_RegistrarDetalle(?, ?, ?, ?)}";
+        String sqlPuntos = "{CALL SP_ActualizarPuntosCliente(?, ?)}";
 
         try (Connection conn = ConexionDB.getConnection()) {
-            // Transacción manual
             conn.setAutoCommit(false);
 
-            // 1. Crear el Pedido
             int idPedidoGenerado = 0;
             try (CallableStatement stmtPedido = conn.prepareCall(sqlPedido)) {
-                stmtPedido.setDouble(1, totalConDescuento);
-
-                // Obtenemos el empleado de la sesión global (Asegúrate de tener la clase SesionActiva.java)
+                stmtPedido.setDouble(1, totalFinal);
                 stmtPedido.setInt(2, SesionActiva.getIdEmpleado());
 
                 Cliente cActivo = SesionActiva.getClienteActivo();
@@ -125,13 +136,11 @@ public class MainController {
                 } else {
                     stmtPedido.setNull(3, Types.INTEGER);
                 }
-
                 stmtPedido.registerOutParameter(4, Types.INTEGER);
                 stmtPedido.execute();
                 idPedidoGenerado = stmtPedido.getInt(4);
             }
 
-            // 2. Insertar los detalles
             try (CallableStatement stmtDetalle = conn.prepareCall(sqlDetalle)) {
                 for (Producto p : listaPedido) {
                     stmtDetalle.setInt(1, idPedidoGenerado);
@@ -142,53 +151,71 @@ public class MainController {
                 }
             }
 
-            conn.commit();
-            mostrarAlerta("Éxito", "Venta #" + idPedidoGenerado + " procesada correctamente.", Alert.AlertType.INFORMATION);
+            Cliente cActivo = SesionActiva.getClienteActivo();
+            int puntosGanadosHoy = 0;
 
-            // Limpieza
+            if (cActivo != null) {
+                int puntosActuales = cActivo.getPuntos();
+                int puntosGastados = SesionActiva.isUsarPuntosEnVenta() ? (int)(descuentoActual / 0.10) : 0;
+                puntosGanadosHoy = (int)(totalFinal / 10.0);
+
+                int nuevosPuntos = puntosActuales - puntosGastados + puntosGanadosHoy;
+
+                try (CallableStatement stmtPuntos = conn.prepareCall(sqlPuntos)) {
+                    stmtPuntos.setInt(1, cActivo.getIdCliente());
+                    stmtPuntos.setInt(2, nuevosPuntos);
+                    stmtPuntos.executeUpdate();
+                }
+            }
+
+            conn.commit();
+
+            String msj = "Venta #" + idPedidoGenerado + " procesada correctamente.";
+            if(cActivo != null) msj += "\nEl cliente acumuló " + puntosGanadosHoy + " puntos nuevos.";
+
+            mostrarAlerta("Éxito", msj, Alert.AlertType.INFORMATION);
+
             listaPedido.clear();
             SesionActiva.setClienteActivo(null);
             SesionActiva.setUsarPuntosEnVenta(false);
             descuentoActual = 0.0;
-            lblClienteActivo.setText("Cliente: Ninguno");
-            lblDescuento.setText("Descuento: $0.00");
+            lblClienteActivo.setText("👤 Cliente: Ninguno");
             actualizarTotales();
             cargarInventarioEnPantalla();
 
         } catch (SQLException e) {
-            mostrarAlerta("Error crítico", "Fallo al procesar la venta. Transacción cancelada.", Alert.AlertType.ERROR);
+            mostrarAlerta("Error crítico", "Fallo al procesar la venta.", Alert.AlertType.ERROR);
             e.printStackTrace();
         }
     }
 
     @FXML
     public void abrirVentanaCliente(ActionEvent event) {
-        abrirModal("ClienteIdentificarView.fxml", "Identificar Cliente");
-    }
+        abrirModalAndWait("ClienteIdentificarView.fxml", "Identificar Cliente");
 
-    @FXML
-    public void abrirInventario(ActionEvent event) {
-        cambiarVista(event, "InventarioView.fxml", "Gen POS - Inventario");
+        Cliente c = SesionActiva.getClienteActivo();
+        if (c != null) {
+            lblClienteActivo.setText("👤 Cliente: " + c.getNombre());
+        } else {
+            lblClienteActivo.setText("👤 Cliente: Ninguno");
+        }
+
+        actualizarTotales();
     }
 
     @FXML
     public void volverAlMenu(ActionEvent event) {
-        cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Menú");
-    }
-
-    private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/MenuPrincipalView.fxml"));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
-            stage.setTitle(titulo);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void abrirModal(String fxml, String titulo) {
+    private void abrirModalAndWait(String fxml, String titulo) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
@@ -196,7 +223,7 @@ public class MainController {
             stage.setScene(new Scene(root));
             stage.setTitle(titulo);
             stage.setResizable(false);
-            stage.show();
+            stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
         }

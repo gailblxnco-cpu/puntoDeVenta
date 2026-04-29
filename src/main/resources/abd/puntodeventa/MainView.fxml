@@ -9,9 +9,8 @@
             <padding><Insets top="15" right="20" bottom="15" left="20"/></padding>
             <Label text="Gen POS" styleClass="title-3"/>
             <Region HBox.hgrow="ALWAYS" />
-            <Button text="Menú Principal" onAction="#volverAlMenu" styleClass="flat"/>
-            <Button text="Cliente" onAction="#abrirVentanaCliente" styleClass="warning, outlined"/>
-            <Button text="Inventario" onAction="#abrirInventario" styleClass="flat"/>
+            <Button text="🏠 Menú Principal" onAction="#volverAlMenu" styleClass="elevated-1"/>
+            <Button text="👤 Cliente" onAction="#abrirVentanaCliente" styleClass="warning, elevated-1"/>
             <Label text="Sesión: Aby" styleClass="text-muted"/>
         </HBox>
     </top>
@@ -20,28 +19,39 @@
         <HBox spacing="15">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
 
-            <VBox prefWidth="400" spacing="15" styleClass="card">
+            <VBox prefWidth="400" spacing="12" styleClass="card">
                 <Label text="Detalle de Venta" styleClass="title-4"/>
-                <TableView fx:id="tablaPedido" VBox.vgrow="ALWAYS">
+
+                <TableView fx:id="tablaPedido" VBox.vgrow="ALWAYS" maxHeight="Infinity">
                     <columns>
-                        <TableColumn fx:id="colNombre" text="Producto" prefWidth="250"/>
-                        <TableColumn fx:id="colPrecio" text="Precio" prefWidth="100"/>
+                        <TableColumn fx:id="colNombre" text="Producto" />
+                        <TableColumn fx:id="colPrecio" text="Precio" />
                     </columns>
                 </TableView>
-                <VBox spacing="10" styleClass="bg-subtle" style="-fx-padding: 10;">
-                    <Label fx:id="lblClienteActivo" text="Cliente: Ninguno" styleClass="text-bold"/>
-                    <Label fx:id="lblDescuento" text="Descuento: $0.00" styleClass="warning"/>
+
+                <VBox spacing="5" styleClass="bg-subtle" style="-fx-padding: 10; -fx-background-radius: 8;">
+                    <Label fx:id="lblClienteActivo" text="👤 Cliente: Ninguno" styleClass="text-bold"/>
+                    <Separator/>
+
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="Total:" styleClass="title-2"/>
+                        <Label text="Subtotal:" styleClass="text-muted"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label fx:id="lblTotal" text="0.00" styleClass="title-2"/>
+                        <Label fx:id="lblSubtotal" text="0.00" styleClass="text-muted"/>
+                    </HBox>
+
+                    <Label fx:id="lblDescuento" text="🎁 Descuento: $0.00" styleClass="warning, caption"/>
+
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Total a Pagar:" styleClass="title-3"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblTotal" text="0.00" styleClass="title-3"/>
                     </HBox>
                 </VBox>
-                <Button text="PROCESAR PAGO" onAction="#handlePago" maxWidth="Infinity" prefHeight="50" styleClass="success"/>
+                <Button text="💵 PROCESAR PAGO" onAction="#handlePago" maxWidth="Infinity" prefHeight="40" styleClass="success, elevated-2"/>
             </VBox>
 
             <VBox HBox.hgrow="ALWAYS" spacing="15" styleClass="card">
-                <TextField fx:id="txtBuscar" promptText="Buscar producto..."/>
+                <TextField fx:id="txtBuscar" promptText="🔍 Buscar producto..."/>
                 <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
                     <FlowPane fx:id="flowProductos" hgap="15" vgap="15" />
                 </ScrollPane>
