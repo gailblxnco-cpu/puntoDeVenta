@@ -1,6 +1,7 @@
 package abd.puntodeventa;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,7 +11,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
+
 import java.io.IOException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UsuarioController {
 
@@ -22,17 +28,44 @@ public class UsuarioController {
     @FXML private TableColumn<Usuario, String> colUser;
     @FXML private TableColumn<Usuario, String> colRol;
 
+    private ObservableList<Usuario> listaUsuariosBD = FXCollections.observableArrayList();
+
     @FXML
     public void initialize() {
         colUser.setCellValueFactory(cellData -> cellData.getValue().usernameProperty());
         colRol.setCellValueFactory(cellData -> cellData.getValue().rolProperty());
-        tablaUsuarios.setItems(InventarioGlobal.getUsuarios());
-        cbRol.setItems(FXCollections.observableArrayList("ADMIN", "CAJERO"));
+
+        cbRol.setItems(FXCollections.observableArrayList("gerente", "vendedor", "mesero"));
+        cargarUsuariosDesdeBD();
     }
 
-    /**
-     * Llena el formulario cuando haces clic en un renglón de la tabla.
-     */
+    // --- LEER (READ) ---
+    private void cargarUsuariosDesdeBD() {
+        listaUsuariosBD.clear();
+        String sql = "{CALL SP_ObtenerEmpleados()}";
+
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                listaUsuariosBD.add(new Usuario(
+                        rs.getInt("idEmpleado"),
+                        rs.getString("nombre"),
+                        rs.getString("contrasena"),
+                        rs.getString("rol"),
+                        true // Todos los que devuelve el SP son activos
+                ));
+            }
+            tablaUsuarios.setItems(listaUsuariosBD);
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error de Carga", "No se pudieron cargar los empleados.");
+            e.printStackTrace();
+        }
+    }
+
+    // --- SELECCIONAR RENGLÓN ---
     @FXML
     public void seleccionarUsuario(MouseEvent event) {
         Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
@@ -43,17 +76,31 @@ public class UsuarioController {
         }
     }
 
+    // --- CREAR (CREATE) ---
     @FXML
     public void crearUsuario(ActionEvent event) {
         if (!validarCampos()) return;
+        String sql = "{CALL SP_InsertarEmpleado(?, ?, ?)}";
 
-        Usuario nuevo = new Usuario(txtNuevoUser.getText().trim(), txtNuevoPass.getText().trim(), cbRol.getValue());
-        InventarioGlobal.getUsuarios().add(nuevo);
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
 
-        mostrarAlerta("Éxito", "Usuario creado correctamente.");
-        limpiarCampos(null);
+            stmt.setString(1, txtNuevoUser.getText().trim());
+            stmt.setString(2, txtNuevoPass.getText().trim());
+            stmt.setString(3, cbRol.getValue());
+
+            stmt.executeUpdate();
+            mostrarAlerta("Éxito", "Usuario creado correctamente.");
+
+            limpiarCampos(null);
+            cargarUsuariosDesdeBD();
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error", "No se pudo crear el usuario: " + e.getMessage());
+        }
     }
 
+    // --- MODIFICAR (UPDATE) ---
     @FXML
     public void modificarUsuario(ActionEvent event) {
         Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
@@ -63,34 +110,56 @@ public class UsuarioController {
         }
         if (!validarCampos()) return;
 
-        // Actualizamos los datos del usuario seleccionado
-        seleccionado.usernameProperty().set(txtNuevoUser.getText().trim());
-        // Nota: Si quieres actualizar la contraseña, deberás agregar un passwordProperty() en tu clase Usuario
-        // seleccionado.passwordProperty().set(txtNuevoPass.getText().trim());
-        seleccionado.rolProperty().set(cbRol.getValue());
+        String sql = "{CALL SP_ActualizarEmpleado(?, ?, ?, ?)}";
 
-        tablaUsuarios.refresh(); // Refresca la tabla para ver los cambios
-        mostrarAlerta("Éxito", "Usuario modificado correctamente.");
-        limpiarCampos(null);
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setInt(1, seleccionado.getId());
+            stmt.setString(2, txtNuevoUser.getText().trim());
+            stmt.setString(3, txtNuevoPass.getText().trim());
+            stmt.setString(4, cbRol.getValue());
+
+            stmt.executeUpdate();
+            mostrarAlerta("Éxito", "Usuario modificado correctamente.");
+
+            limpiarCampos(null);
+            cargarUsuariosDesdeBD();
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error", "No se pudo modificar: " + e.getMessage());
+        }
     }
 
+    // --- ELIMINAR (SOFT DELETE) ---
     @FXML
     public void eliminarUsuario(ActionEvent event) {
         Usuario seleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarAlerta("Error", "Primero selecciona un usuario de la tabla para eliminar.");
+            mostrarAlerta("Error", "Selecciona un usuario de la tabla para eliminar.");
             return;
         }
 
-        // Protección para no eliminar al propio admin logueado
-        if (seleccionado.getUsername().equals(InventarioGlobal.getUsuarioLogueado().getUsername())) {
-            mostrarAlerta("Acción denegada", "No puedes eliminar tu propio usuario mientras estás en sesión.");
+        if (seleccionado.getId() == SesionActiva.getIdEmpleado()) {
+            mostrarAlerta("Acción denegada", "No puedes eliminar tu propia cuenta en sesión.");
             return;
         }
 
-        InventarioGlobal.getUsuarios().remove(seleccionado);
-        mostrarAlerta("Éxito", "Usuario eliminado correctamente.");
-        limpiarCampos(null);
+        String sql = "{CALL SP_EliminarEmpleado(?)}";
+
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setInt(1, seleccionado.getId());
+            stmt.executeUpdate();
+
+            mostrarAlerta("Éxito", "Usuario dado de baja exitosamente.");
+            limpiarCampos(null);
+            cargarUsuariosDesdeBD(); // Al refrescar, ya no aparecerá en la tabla
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error", "Ocurrió un problema al dar de baja al usuario.");
+        }
     }
 
     @FXML

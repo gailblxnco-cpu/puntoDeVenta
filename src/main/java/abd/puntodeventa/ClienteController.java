@@ -8,7 +8,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+
 import java.io.IOException;
+import java.sql.*;
 
 public class ClienteController {
 
@@ -29,43 +31,70 @@ public class ClienteController {
             return;
         }
 
-        // Buscar en la lista global de clientes
-        for (Cliente c : InventarioGlobal.getClientes()) {
-            if (c.getTelefono().equals(telefono)) {
-                // Cliente encontrado: lo activamos para la venta actual
-                InventarioGlobal.setClienteActivo(c);
-                cambiarVista(event, "PerfilClienteView.fxml", "Perfil del Cliente");
-                return;
-            }
-        }
-
-        mostrarAlerta("No encontrado", "No existe un cliente con ese número. Proceda al registro.");
+        buscarYActivarCliente(event, telefono.trim());
     }
 
     // --- LÓGICA DE REGISTRO ---
     @FXML
     public void registrarCliente(ActionEvent event) {
-        String nombre = txtNuevoNombre.getText();
-        String telefono = txtNuevoTelefono.getText();
+        String nombre = txtNuevoNombre.getText().trim();
+        String tel = txtNuevoTelefono.getText().trim();
 
-        if (nombre.isEmpty() || telefono.isEmpty()) {
+        if (nombre.isEmpty() || tel.isEmpty()) {
             mostrarAlerta("Campos incompletos", "Debe llenar el nombre y el teléfono para registrar.");
             return;
         }
 
-        // Crear y añadir el nuevo cliente
-        Cliente nuevoCliente = new Cliente(nombre, telefono, 0);
-        InventarioGlobal.getClientes().add(nuevoCliente);
+        String sql = "{CALL SP_InsertarCliente(?, ?)}";
 
-        // Seleccionarlo automáticamente para la venta
-        InventarioGlobal.setClienteActivo(nuevoCliente);
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
 
-        mostrarAlerta("Registro Exitoso", "El cliente ha sido registrado y seleccionado.");
-        cambiarVista(event, "PerfilClienteView.fxml", "Perfil del Cliente");
+            stmt.setString(1, nombre);
+            stmt.setString(2, tel);
+            stmt.executeUpdate();
+
+            mostrarAlerta("Registro Exitoso", "El cliente ha sido registrado.");
+
+            // Auto-logueamos al cliente recién creado para obtener su ID
+            buscarYActivarCliente(event, tel);
+
+        } catch (SQLException e) {
+            mostrarAlerta("Error", "No se pudo registrar. Verifique que el teléfono no esté duplicado.");
+            e.printStackTrace();
+        }
+    }
+
+    // --- MÉTODO AUXILIAR DE BASE DE DATOS ---
+    private void buscarYActivarCliente(ActionEvent event, String telefono) {
+        String sql = "{CALL SP_BuscarClientePorTelefono(?)}";
+
+        try (Connection conn = ConexionDB.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, telefono);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Cliente encontrado = new Cliente(
+                        rs.getInt("idCliente"),
+                        rs.getString("nombreCompleto"),
+                        rs.getString("telefono"),
+                        rs.getInt("puntos")
+                );
+
+                InventarioGlobal.setClienteActivo(encontrado);
+                cambiarVista(event, "PerfilClienteView.fxml", "Perfil del Cliente");
+            } else {
+                mostrarAlerta("No encontrado", "No existe un cliente con ese número. Proceda al registro.");
+            }
+        } catch (SQLException e) {
+            mostrarAlerta("Error de Conexión", "Hubo un problema al buscar en la base de datos.");
+            e.printStackTrace();
+        }
     }
 
     // --- NAVEGACIÓN ENTRE VISTAS ---
-
     @FXML
     public void irARegistro(ActionEvent event) {
         cambiarVista(event, "ClienteRegistroView.fxml", "Registrar Nuevo Cliente");
@@ -78,12 +107,9 @@ public class ClienteController {
 
     @FXML
     public void cerrarVentana(ActionEvent event) {
-        // Al cancelar, nos aseguramos de limpiar cualquier cliente a medias
         InventarioGlobal.setClienteActivo(null);
         cambiarVista(event, "MainView.fxml", "Gen POS - Caja Principal");
     }
-
-    // --- MÉTODOS AUXILIARES (UX Mejorado) ---
 
     private void mostrarAlerta(String titulo, String mensaje) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -93,22 +119,16 @@ public class ClienteController {
         alert.showAndWait();
     }
 
-    /**
-     * Cambia la vista manteniendo el tamaño actual de la ventana
-     * para que la transición sea fluida y profesional.
-     */
     private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
             double anchoContenido = stage.getScene().getWidth();
             double altoContenido = stage.getScene().getHeight();
 
             Scene scene = new Scene(root, anchoContenido, altoContenido);
-
             stage.setScene(scene);
             stage.setTitle(titulo);
             stage.show();
