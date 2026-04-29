@@ -1,4 +1,4 @@
-/* General */
+ General
 .root { -fx-font-family: "Segoe UI"; }
 
 /* Panel Izquierdo (Ticket) */
@@ -82,4 +82,7 @@
     -fx-min-width: 380px;
     -fx-pref-width: 380px;
     -fx-max-width: 380px;
-}
+} **/
+
+
+

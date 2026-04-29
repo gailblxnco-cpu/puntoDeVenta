@@ -1,5 +1,6 @@
 package abd.puntodeventa;
 
+import atlantafx.base.theme.PrimerDark;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -14,35 +15,27 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class MainController {
-    // Componentes de la Tabla de Pedido
+
     @FXML private TableView<Producto> tablaPedido;
     @FXML private TableColumn<Producto, String> colNombre;
     @FXML private TableColumn<Producto, Double> colPrecio;
-
-    // Paneles y Buscador
-    @FXML private FlowPane flowProductos;
-    @FXML private TextField txtBuscar;
-
-    // Etiquetas de Totales y Fidelización
-    @FXML private Label lblTotal;
-    @FXML private Label lblSubtotal;
     @FXML private Label lblClienteActivo;
     @FXML private Label lblDescuento;
+    @FXML private Label lblTotal;
+    @FXML private TextField txtBuscar;
+    @FXML private FlowPane flowProductos;
 
     private ObservableList<Producto> listaPedido = FXCollections.observableArrayList();
+    private double totalActual = 0.0;
+    private double descuentoActual = 0.0;
 
     @FXML
     public void initialize() {
-        // 1. Configurar columnas de la tabla
-        colNombre.setCellValueFactory(d -> d.getValue().nombreProperty());
-        colPrecio.setCellValueFactory(d -> d.getValue().precioProperty().asObject());
+        colNombre.setCellValueFactory(cellData -> cellData.getValue().nombreProperty());
+        colPrecio.setCellValueFactory(cellData -> cellData.getValue().precioProperty().asObject());
         tablaPedido.setItems(listaPedido);
 
-        // 2. Cargar botones de productos con estilo CSS
         cargarInventarioEnPantalla();
-
-        // 3. Refrescar totales y datos del cliente activo
-        actualizarTotales();
     }
 
     private void cargarInventarioEnPantalla() {
@@ -50,124 +43,89 @@ public class MainController {
         for (Producto p : InventarioGlobal.getProductos()) {
             Button btnItem = new Button(p.getNombre() + "\n$" + p.getPrecio());
 
-            // Asignamos la clase del archivo CSS
-            btnItem.getStyleClass().add("product-button");
+            // Integración nativa con AtlantaFX
+            btnItem.getStyleClass().addAll("button", "accent", "outlined");
+            btnItem.setPrefSize(130, 80);
 
-            btnItem.setOnAction(e -> {
-                listaPedido.add(p);
-                actualizarTotales();
-            });
+            btnItem.setOnAction(e -> agregarAlPedido(p));
             flowProductos.getChildren().add(btnItem);
         }
     }
 
+    private void agregarAlPedido(Producto p) {
+        listaPedido.add(p);
+        actualizarTotales();
+    }
+
     private void actualizarTotales() {
-        double subtotal = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
-        double descEfectivo = 0;
+        totalActual = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
+        double totalConDescuento = totalActual - descuentoActual;
+        if(totalConDescuento < 0) totalConDescuento = 0;
 
-        Cliente activo = InventarioGlobal.getClienteActivo();
-
-        if (activo != null) {
-            lblClienteActivo.setText("Cliente: " + activo.getNombre());
-
-            if (InventarioGlobal.isUsarPuntosEnVenta()) {
-                // Cada punto acumulado equivale a $0.10 de descuento
-                descEfectivo = activo.getPuntos() * 0.1;
-                lblDescuento.setText(String.format("Descuento: -$%.2f (%d pts)", descEfectivo, activo.getPuntos()));
-            } else {
-                lblDescuento.setText("Descuento: $0.00");
-            }
-        } else {
-            lblClienteActivo.setText("Cliente: Ninguno");
-            lblDescuento.setText("Descuento: $0.00");
-        }
-
-        double totalFinal = Math.max(0, subtotal - descEfectivo);
-        lblSubtotal.setText(String.format("%.2f", subtotal));
-        lblTotal.setText(String.format("%.2f", totalFinal));
+        lblTotal.setText(String.format("$%.2f", totalConDescuento));
     }
 
     @FXML
     public void handlePago(ActionEvent event) {
         if (listaPedido.isEmpty()) {
-            mostrarAlerta("Carrito vacío", "Por favor, agrega productos al pedido.");
+            mostrarAlerta("Error", "El pedido está vacío.", Alert.AlertType.WARNING);
             return;
         }
-
-        double subtotal = listaPedido.stream().mapToDouble(Producto::getPrecio).sum();
-        double descuento = 0;
-        Cliente cliente = InventarioGlobal.getClienteActivo();
-        StringBuilder ticket = new StringBuilder("DETALLE DE VENTA\n------------------\n");
-
-        if (cliente != null) {
-            if (InventarioGlobal.isUsarPuntosEnVenta()) {
-                descuento = cliente.getPuntos() * 0.1;
-                cliente.setPuntos(0); // Se consumen los puntos
-                ticket.append("Puntos canjeados: -$").append(String.format("%.2f", descuento)).append("\n");
-            }
-
-            // El cliente gana 1 punto por cada $10 gastados (sobre el subtotal)
-            int nuevosPuntos = (int) (subtotal / 10);
-            cliente.setPuntos(cliente.getPuntos() + nuevosPuntos);
-
-            ticket.append("Cliente: ").append(cliente.getNombre()).append("\n");
-            ticket.append("Puntos ganados: +").append(nuevosPuntos).append("\n");
-            ticket.append("Nuevo saldo: ").append(cliente.getPuntos()).append(" pts\n");
-        }
-
-        double totalFinal = Math.max(0, subtotal - descuento);
-        ticket.append("------------------\nTOTAL: $").append(String.format("%.2f", totalFinal));
-
-        mostrarAlerta("Venta Exitosa", ticket.toString());
-
-        // Limpiar sesión de venta actual
+        mostrarAlerta("Éxito", "Pago procesado correctamente.", Alert.AlertType.INFORMATION);
         listaPedido.clear();
-        InventarioGlobal.setClienteActivo(null);
-        InventarioGlobal.setUsarPuntosEnVenta(false);
+        descuentoActual = 0.0;
+        lblClienteActivo.setText("Cliente: Ninguno");
+        lblDescuento.setText("Descuento: $0.00");
         actualizarTotales();
-    }
-
-
-    @FXML
-    public void volverAlMenu(ActionEvent event) {
-        cambiarVista(event, "MenuPrincipalView.fxml", "Menú Principal");
     }
 
     @FXML
     public void abrirVentanaCliente(ActionEvent event) {
-        cambiarVista(event, "ClienteIdentificarView.fxml", "Identificar Cliente");
+        abrirModal("ClienteIdentificarView.fxml", "Identificar Cliente");
     }
 
     @FXML
     public void abrirInventario(ActionEvent event) {
-        cambiarVista(event, "InventarioView.fxml", "Gestión de Inventario");
+        cambiarVista(event, "InventarioView.fxml", "Gen POS - Inventario");
+    }
+
+    @FXML
+    public void volverAlMenu(ActionEvent event) {
+        cambiarVista(event, "MenuPrincipalView.fxml", "Gen POS - Menú");
     }
 
     private void cambiarVista(ActionEvent event, String fxml, String titulo) {
         try {
-            // Usar la ruta absoluta del recurso para mayor estabilidad
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
             Parent root = loader.load();
-
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            double ancho = stage.getScene().getWidth();
-            double alto = stage.getScene().getHeight();
-
-            Scene scene = new Scene(root, ancho, alto);
-            stage.setScene(scene);
+            stage.setScene(new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight()));
             stage.setTitle(titulo);
-            stage.show();
         } catch (IOException e) {
-            System.err.println("Error al cargar la vista: " + fxml);
             e.printStackTrace();
         }
     }
 
-    private void mostrarAlerta(String titulo, String contenido) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private void abrirModal(String fxml, String titulo) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/abd/puntodeventa/" + fxml));
+            Parent root = loader.load();
+            Stage stage = new Stage();
+            stage.setScene(new Scene(root));
+            stage.setTitle(titulo);
+            stage.setResizable(false);
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
+        Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
-        alert.setContentText(contenido);
+        alert.setContentText(mensaje);
+        alert.getDialogPane().getScene().setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
         alert.showAndWait();
     }
 }

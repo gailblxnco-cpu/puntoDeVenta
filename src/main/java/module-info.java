@@ -7,6 +7,7 @@ module abd.puntodeventa {
     requires net.synedra.validatorfx;
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
+    requires atlantafx.base;
 
     opens abd.puntodeventa to javafx.fxml;
     exports abd.puntodeventa;

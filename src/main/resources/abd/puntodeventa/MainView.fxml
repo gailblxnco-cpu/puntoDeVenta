@@ -3,55 +3,46 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane stylesheets="@estilos.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.MainController">
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="abd.puntodeventa.MainController">
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #2c3e50; -fx-padding: 15;">
-            <Label text="Gen POS" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="bg-subtle">
+            <padding><Insets top="15" right="20" bottom="15" left="20"/></padding>
+            <Label text="Gen POS" styleClass="title-3"/>
             <Region HBox.hgrow="ALWAYS" />
-
-            <Button text="Menú Principal" onAction="#volverAlMenu"
-                    style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
-
-            <Button text="Cliente / Puntos" onAction="#abrirVentanaCliente"
-                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
-
-            <Label text="Cajera: Aby" styleClass="user-label"/>
+            <Button text="Menú Principal" onAction="#volverAlMenu" styleClass="flat"/>
+            <Button text="Cliente" onAction="#abrirVentanaCliente" styleClass="warning, outlined"/>
+            <Button text="Inventario" onAction="#abrirInventario" styleClass="flat"/>
+            <Label text="Sesión: Aby" styleClass="text-muted"/>
         </HBox>
     </top>
 
     <center>
-        <HBox>
-            <VBox prefWidth="380" spacing="15" styleClass="cart-panel">
-                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-                <Label text="Detalle del Pedido" styleClass="header-label"/>
+        <HBox spacing="15">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+
+            <VBox prefWidth="400" spacing="15" styleClass="card">
+                <Label text="Detalle de Venta" styleClass="title-4"/>
                 <TableView fx:id="tablaPedido" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colNombre" text="Café" prefWidth="220"/>
+                        <TableColumn fx:id="colNombre" text="Producto" prefWidth="250"/>
                         <TableColumn fx:id="colPrecio" text="Precio" prefWidth="100"/>
                     </columns>
                 </TableView>
-                <VBox spacing="5" style="-fx-padding: 10; -fx-border-color: #f39c12; -fx-border-radius: 5; -fx-background-color: #fdfaf0;">
-                    <Label fx:id="lblClienteActivo" text="Cliente: Ninguno" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                    <Label fx:id="lblDescuento" text="Descuento: $0.00" style="-fx-text-fill: #e67e22;"/>
-                </VBox>
-                <VBox spacing="10">
-                    <HBox>
-                        <Label text="Subtotal:" />
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="lblSubtotal" text="0.00" />
-                    </HBox>
-                    <HBox>
-                        <Label text="Total:" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="lblTotal" text="0.00" styleClass="total-text" />
+                <VBox spacing="10" styleClass="bg-subtle" style="-fx-padding: 10;">
+                    <Label fx:id="lblClienteActivo" text="Cliente: Ninguno" styleClass="text-bold"/>
+                    <Label fx:id="lblDescuento" text="Descuento: $0.00" styleClass="warning"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Total:" styleClass="title-2"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblTotal" text="0.00" styleClass="title-2"/>
                     </HBox>
                 </VBox>
-                <Button text="COBRAR" maxWidth="Infinity" onAction="#handlePago" styleClass="btn-pay" style="-fx-cursor: hand;"/>
+                <Button text="PROCESAR PAGO" onAction="#handlePago" maxWidth="Infinity" prefHeight="50" styleClass="success"/>
             </VBox>
-            <VBox HBox.hgrow="ALWAYS" spacing="20" styleClass="inventory-panel">
-                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-                <TextField fx:id="txtBuscar" promptText="Buscar bebida..." maxWidth="300" styleClass="search-field"/>
-                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="scroll-dark">
+
+            <VBox HBox.hgrow="ALWAYS" spacing="15" styleClass="card">
+                <TextField fx:id="txtBuscar" promptText="Buscar producto..."/>
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
                     <FlowPane fx:id="flowProductos" hgap="15" vgap="15" />
                 </ScrollPane>
             </VBox>
